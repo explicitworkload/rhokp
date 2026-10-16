@@ -14,25 +14,59 @@
       false.
     quiet: true
 
-- name: Write the RHOKP reverse proxy location
-  ansible.builtin.template:
-    src: rhokp.conf.j2
-    dest: "{{ rhokp_bastion_proxy_dir }}/{{ rhokp_bastion_proxy_file }}"
-    mode: "0644"
-  register: _rhokp_proxy_conf
+- name: Resolve the upstream the bastion should proxy to
+  ansible.builtin.set_fact:
+    _rhokp_proxy_upstream: >-
+      {{ hostvars[rhokp_bastion_proxy_target]['ansible_host']
+         | default(rhokp_bastion_proxy_target) }}:{{ rhokp_bastion_proxy_port }}
 
-- name: Validate the nginx configuration
-  ansible.builtin.command: nginx -t
-  changed_when: false
+# A drop-in that nginx rejects would stop nginx starting at all, not just stop
+# it reloading -- so an invalid config is backed out before it can do that.
+- name: Install the RHOKP reverse proxy location
+  block:
+    - name: Write the RHOKP reverse proxy location
+      ansible.builtin.template:
+        src: rhokp.conf.j2
+        dest: "{{ rhokp_bastion_proxy_dir }}/{{ rhokp_bastion_proxy_file }}"
+        mode: "0644"
+        backup: true
+      register: _rhokp_proxy_conf
+
+    - name: Validate the nginx configuration
+      ansible.builtin.command:
+        argv: [nginx, -t]
+      changed_when: false
+
+  rescue:
+    - name: Back out the rejected drop-in so nginx can still start
+      ansible.builtin.file:
+        path: "{{ rhokp_bastion_proxy_dir }}/{{ rhokp_bastion_proxy_file }}"
+        state: absent
+
+    - name: Confirm nginx is valid again without it
+      ansible.builtin.command:
+        argv: [nginx, -t]
+      register: _rhokp_nginx_recheck
+      changed_when: false
+      failed_when: false
+
+    - name: Report the rejected configuration
+      ansible.builtin.fail:
+        msg: >-
+          nginx rejected the RHOKP drop-in, so it has been removed and nginx is
+          left as it was ({{ 'valid' if _rhokp_nginx_recheck.rc == 0
+          else 'STILL INVALID - something else is wrong' }}).
+          Error was: {{ ansible_failed_result.stderr | default('see above') }}
 
 - name: Reload nginx
-  ansible.builtin.command: nginx -s reload
+  ansible.builtin.command:
+    argv: [nginx, -s, reload]
   when: _rhokp_proxy_conf is changed
   changed_when: true
 
 - name: Report the public URLs
   ansible.builtin.debug:
     msg:
-      - "Portal proxied from this bastion to {{ rhokp_bastion_proxy_target }}:{{ rhokp_bastion_proxy_port }}"
+      - "Portal proxied from this bastion to {{ _rhokp_proxy_upstream }}"
       - "HTTP : http://{{ field_asset.route_app | default('app-<guid>.<subdomain>') }}"
       - "HTTPS: https://{{ field_asset.route_app_secure | default('app-secure-<guid>.<subdomain>') }}"

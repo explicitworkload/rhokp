@@ -5,9 +5,25 @@
 #   https://{{ field_asset.route_app_secure | default('app-secure-<guid>.<subdomain>') }} -> bastion:8443 -> here
 #
 # TLS is terminated at the edge by the Route, so this proxies plain HTTP.
-
-location / {
-    proxy_pass http://{{ hostvars[rhokp_bastion_proxy_target]['ansible_host'] | default(rhokp_bastion_proxy_target) }}:{{ rhokp_bastion_proxy_port }}/;
+#
+# The platform's /etc/nginx/conf.d/bastion-proxy.conf includes this file and
+# then declares its own `location / { try_files ... }`. Declaring a second
+# `location /` here is a duplicate and nginx refuses to start:
+#
+#   nginx: [emerg] duplicate location "/" in .../bastion-proxy.conf
+#
+{% if rhokp_bastion_proxy_path == '/' %}
+# nginx matches regex locations ahead of plain-prefix ones, so `~ ^/` claims
+# every request and the platform's catch-all never runs. Note that proxy_pass
+# in a regex location must carry no URI part.
+location ~ ^/ {
+    proxy_pass http://{{ _rhokp_proxy_upstream }};
+{% else %}
+# Mounted under a sub-path, which does not collide with the platform's
+# `location /` at all.
+location {{ rhokp_bastion_proxy_path }} {
+    proxy_pass http://{{ _rhokp_proxy_upstream }}/;
+{% endif %}
     proxy_http_version 1.1;
 
     proxy_set_header Host              $host;
