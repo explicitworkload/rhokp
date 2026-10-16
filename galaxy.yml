@@ -20,6 +20,22 @@ tags:
 repository: https://github.com/explicitworkload/rhokp
 issues: https://github.com/explicitworkload/rhokp/issues
 
+# No external collection dependencies, deliberately.
+#
+# The RHDP runner exports ANSIBLE_COLLECTIONS_PATH at a directory that hides
+# the collections its own execution environment ships in
+# /usr/share/ansible/collections, and installs requirements.yml with
+# `ansible-galaxy install -r -p <path>`, which is roles-only:
+#
+#   [WARNING]: The requirements file ... contains collections which will be ignored.
+#   [ERROR]: couldn't resolve module/action 'containers.podman.podman_secret'
+#
+# Declaring them as dependencies here does not help either: ansible-galaxy
+# sees the EE's copy, reports "already installed, skipping", and never places
+# them in the path ansible-playbook will actually search. So the roles use
+# ansible.builtin only and shell out to podman and firewall-cmd.
+dependencies: {}
+
 # Keep the built collection to just the automation. playbooks/secrets/ is
 # deliberately NOT ignored -- the runner needs the vault files at deploy time.
 build_ignore:

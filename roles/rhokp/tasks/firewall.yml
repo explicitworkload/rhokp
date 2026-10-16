@@ -1,15 +1,43 @@
 ---
+# firewall-cmd is driven directly rather than through ansible.posix.firewalld,
+# so the role depends on nothing outside ansible.builtin. See the note in
+# secrets.yml for why.
+
 - name: Gather service facts to see whether firewalld is running
   ansible.builtin.service_facts:
 
-- name: Open the portal ports
-  ansible.posix.firewalld:
-    port: "{{ item }}/tcp"
-    zone: "{{ rhokp_firewall_zone }}"
-    permanent: true
-    immediate: true
-    state: enabled
+- name: Manage the portal ports in firewalld
+  when: ansible_facts.services['firewalld.service'].state | default('stopped') == 'running'
   become: true
-  loop: "{{ [rhokp_http_port] + ([rhokp_https_port] if rhokp_publish_https | bool else []) }}"
-  when: >-
-    ansible_facts.services['firewalld.service'].state | default('stopped') == 'running'
+  block:
+    - name: Work out which ports the portal needs
+      ansible.builtin.set_fact:
+        _rhokp_firewall_ports: >-
+          {{ [rhokp_http_port]
+             + ([rhokp_https_port] if rhokp_publish_https | bool else []) }}
+
+    - name: Check which portal ports are already open
+      ansible.builtin.command:
+        argv:
+          - firewall-cmd
+          - --permanent
+          - "--zone={{ rhokp_firewall_zone }}"
+          - "--query-port={{ item }}/tcp"
+      loop: "{{ _rhokp_firewall_ports }}"
+      register: _rhokp_port_state
+      changed_when: false
+      failed_when: false
+
+    - name: Open the portal ports
+      ansible.builtin.command:
+        argv:
+          - firewall-cmd
+          - --permanent
+          - "--zone={{ rhokp_firewall_zone }}"
+          - "--add-port={{ item.item }}/tcp"
+      loop: "{{ _rhokp_port_state.results }}"
+      loop_control:
+        label: "{{ item.item }}/tcp"
+      when: item.rc != 0
+      changed_when: true
+      notify: Reload firewalld

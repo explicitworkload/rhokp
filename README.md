@@ -28,7 +28,7 @@ Field Asset** catalog item. That template dictates the structure:
 | `galaxy.yml` at the repository root | The root **is** an Ansible collection, `explicitworkload.rhokp` |
 | Roles and playbooks inside the collection | `roles/`, `playbooks/` |
 | A playbook entrypoint the runner can find | `playbooks/deploy.yml` |
-| `requirements.yml` at the root or under `playbooks/` | At the root |
+| `requirements.yml` at the root or under `playbooks/` | Not needed — the roles use `ansible.builtin` only |
 | Target the platform's `bastions` and `nodes` inventory groups | `playbooks/deploy.yml` targets both |
 | Showroom lab guide at the root (or a named subdirectory) | `site.yml`, `ui-config.yml`, `content/` at the root |
 
@@ -65,7 +65,7 @@ any RHEL host you can reach, with no RHDP involvement at all. Start at
 | **RHOKP access key** | Issued with your portal entitlement. Injected as `ACCESS_KEY`. Check yours at <https://access.redhat.com/offline/access>. |
 | **Red Hat pull secret** | [console.redhat.com/openshift/install/pull-secret](https://console.redhat.com/openshift/install/pull-secret) — must contain an `auths` entry for `registry.redhat.io`. |
 | **Target host** | RHEL 9.2+ (or 10) with `podman` ≥ 4.4 for Quadlet, reachable over SSH, and a user with `sudo`. |
-| **Control node** | `ansible-core` ≥ 2.15, `python3`, `bash`. |
+| **Control node** | `ansible-core` ≥ 2.15, `python3`, `bash`. No Galaxy collections required. |
 
 ### What has actually been tested
 
@@ -90,7 +90,6 @@ and a rendered Showroom deployment.
 ```
 galaxy.yml                 collection metadata
 meta/runtime.yml
-requirements.yml           containers.podman, ansible.posix
 ansible.cfg                local runs only; the RHDP runner ignores it
 inventory.yml              standalone target hosts — edit this first
 playbooks/
@@ -148,8 +147,11 @@ On whichever machine will *run* Ansible — your laptop, or the RHEL host itself
 ```bash
 git clone https://github.com/explicitworkload/rhokp
 cd rhokp
-ansible-galaxy collection install -r requirements.yml
 ```
+
+The roles use `ansible.builtin` modules only — no Galaxy collections to
+install, and nothing to reach the internet for beyond the container image
+itself.
 
 ### 2. Create your credential vault
 

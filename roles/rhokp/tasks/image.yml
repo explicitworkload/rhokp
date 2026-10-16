@@ -54,13 +54,29 @@
       no_log: true
       changed_when: false
 
-    - name: Pull {{ rhokp_image }}
-      containers.podman.podman_image:
-        name: "{{ rhokp_image }}"
-        auth_file: "{{ _rhokp_authfile_path }}"
-        state: present
-        force: "{{ rhokp_image_force_pull | bool }}"
+    - name: Check whether the image is already present locally
+      ansible.builtin.command:
+        argv:
+          - podman
+          - image
+          - exists
+          - "{{ rhokp_image }}"
       become: "{{ _rhokp_become }}"
       environment: "{{ _rhokp_env }}"
+      register: _rhokp_image_present
+      changed_when: false
+      failed_when: false
+
+    - name: Pull {{ rhokp_image }}
+      ansible.builtin.command:
+        argv:
+          - podman
+          - pull
+          - "--authfile={{ _rhokp_authfile_path }}"
+          - "{{ rhokp_image }}"
+      become: "{{ _rhokp_become }}"
+      environment: "{{ _rhokp_env }}"
+      when: _rhokp_image_present.rc != 0 or rhokp_image_force_pull | bool
       register: _rhokp_pull
+      changed_when: _rhokp_pull.rc == 0
       notify: Restart rhokp

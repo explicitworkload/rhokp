@@ -44,11 +44,19 @@
       failed_when: false
 
     - name: Remove the access key secret
-      containers.podman.podman_secret:
-        name: "{{ rhokp_access_key_secret_name }}"
-        state: absent
+      ansible.builtin.command:
+        argv:
+          - podman
+          - secret
+          - rm
+          - "{{ rhokp_access_key_secret_name }}"
       become: "{{ _rhokp_become }}"
       environment: "{{ _rhokp_env }}"
+      register: _rhokp_secret_rm
+      changed_when: _rhokp_secret_rm.rc == 0
+      failed_when:
+        - _rhokp_secret_rm.rc != 0
+        - "'no such secret' not in (_rhokp_secret_rm.stderr | lower)"
 
     - name: Remove the state directory and any persisted authfile
       ansible.builtin.file:
@@ -60,26 +68,44 @@
         - "{{ _rhokp_authfile }}"
 
     - name: Remove the portal image
-      containers.podman.podman_image:
-        name: "{{ rhokp_image }}"
-        state: absent
+      ansible.builtin.command:
+        argv:
+          - podman
+          - rmi
+          - --ignore
+          - "{{ rhokp_image }}"
       become: "{{ _rhokp_become }}"
       environment: "{{ _rhokp_env }}"
       when: rhokp_remove_image | default(false) | bool
+      register: _rhokp_rmi
+      changed_when: _rhokp_rmi.rc == 0
+      failed_when: false
 
     - name: Gather service facts to see whether firewalld is running
       ansible.builtin.service_facts:
       when: rhokp_manage_firewall | bool
 
     - name: Close the portal ports
-      ansible.posix.firewalld:
-        port: "{{ item }}/tcp"
-        zone: "{{ rhokp_firewall_zone }}"
-        permanent: true
-        immediate: true
-        state: disabled
+      ansible.builtin.command:
+        argv:
+          - firewall-cmd
+          - --permanent
+          - "--zone={{ rhokp_firewall_zone }}"
+          - "--remove-port={{ item }}/tcp"
       become: true
       loop: "{{ [rhokp_http_port, rhokp_https_port] }}"
       when:
         - rhokp_manage_firewall | bool
         - ansible_facts.services['firewalld.service'].state | default('stopped') == 'running'
+      register: _rhokp_close
+      changed_when: _rhokp_close.rc == 0
+      failed_when: false
+
+    - name: Reload firewalld
+      ansible.builtin.command:
+        argv: [firewall-cmd, --reload]
+      become: true
+      when:
+        - rhokp_manage_firewall | bool
+        - ansible_facts.services['firewalld.service'].state | default('stopped') == 'running'
+      changed_when: true
