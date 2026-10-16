@@ -231,7 +231,7 @@ What was installed, for a rootless deploy:
 | systemd service | `rhokp.service` (user scope) |
 | Access key | podman secret `rhokp-access-key` |
 | Key fingerprint | `~/.config/rhokp/access-key.sha256` |
-| Helper | `/usr/local/bin/rhokp-set-credentials` |
+| Helper | `/usr/sbin/rhokp-set-credentials` |
 
 Rootful (`-e rhokp_rootless=false`) puts the first four under
 `/etc/containers/systemd/`, system scope, and `/etc/rhokp/`.
@@ -324,7 +324,7 @@ firewall rules and the nginx route, leaves the portal stopped, and prints the
 command to finish it. On the node:
 
 ```bash
-sudo rhokp-set-credentials
+sudo /usr/sbin/rhokp-set-credentials
 ```
 
 That helper is installed on every node. It prompts for the pull secret and
@@ -616,7 +616,7 @@ ansible-playbook playbooks/uninstall.yml $VP
 Or on the node itself, without Ansible:
 
 ```bash
-sudo rhokp-set-credentials      # prompts, then restarts the portal
+sudo /usr/sbin/rhokp-set-credentials      # prompts, then restarts the portal
 ```
 
 Re-running `playbooks/standalone.yml` is idempotent. The role fingerprints the
@@ -657,7 +657,7 @@ Showroom files out of the built collection.
 | `unauthorized` / `401` on pull | The pull secret has no valid `registry.redhat.io` entry. Download a fresh one and re-run `scripts/init-secrets.sh`. |
 | `Attempting to decrypt but no vault secrets found` | Pass `--vault-password-file playbooks/secrets/vault-password` or `--ask-vault-pass`. |
 | Container exits immediately, `ERR_002: ACCESS_KEY could not be validated` | The key is wrong. Check it at <https://access.redhat.com/offline/access>, then `ansible-vault edit playbooks/secrets/access-key.vault` and re-run. |
-| Portal installed but stopped, "no credentials were available" | Expected in degraded mode. Run `sudo rhokp-set-credentials` on the node. |
+| Portal installed but stopped, "no credentials were available" | Expected in degraded mode. Run `sudo /usr/sbin/rhokp-set-credentials` on the node. |
 | Readiness probe times out | A cold start takes ~45s; the default allows 300s. If it still fails: `podman logs rhokp`. |
 | HTTPS returns `400` but HTTP works | The edge terminates TLS and sends plain HTTP to 8443. Set `rhokp_edge_tls: true`. |
 | Both RHDP routes return `504` | Nothing is listening on the bastion's 8080/8443. Re-order with **Install proxy on bastion?** checked. |

@@ -58,14 +58,15 @@
         - _rhokp_secret_rm.rc != 0
         - "'no such secret' not in (_rhokp_secret_rm.stderr | lower)"
 
-    - name: Remove the state directory and any persisted authfile
+    - name: Remove the state directory, persisted authfile and helper
       ansible.builtin.file:
         path: "{{ item }}"
         state: absent
-      become: "{{ _rhokp_become }}"
+      become: true
       loop:
         - "{{ _rhokp_conf_dir }}"
         - "{{ _rhokp_authfile }}"
+        - "{{ rhokp_helper_path }}"
 
     - name: Remove the portal image
       ansible.builtin.command:

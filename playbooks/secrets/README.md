@@ -47,4 +47,4 @@ git add -f playbooks/secrets/access-key.vault \
 ```
 
 Without them the deploy still succeeds — it just leaves the portal stopped for
-`sudo rhokp-set-credentials` to finish. See "RHDP" in the top-level README.
+`sudo /usr/sbin/rhokp-set-credentials` to finish. See "RHDP" in the top-level README.

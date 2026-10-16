@@ -45,7 +45,7 @@
   ansible.builtin.debug:
     msg:
       - "RHOKP is installed but NOT running -- no credentials were available."
-      - "On {{ inventory_hostname }}, run:  sudo rhokp-set-credentials"
+      - "On {{ inventory_hostname }}, run:  sudo {{ rhokp_helper_path }}"
       - "It prompts for the pull secret and access key, then starts the portal."
   when: not (_rhokp_have_credentials | bool)
   tags: [rhokp, verify]

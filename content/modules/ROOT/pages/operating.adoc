@@ -30,7 +30,7 @@ sudo podman logs rhokp
 
 [source,bash]
 ----
-sudo rhokp-set-credentials
+sudo /usr/sbin/rhokp-set-credentials
 ----
 
 It prompts for the pull secret and the access key, pulls the image if needed,
@@ -64,7 +64,7 @@ environment, never in the unit file.
 
 |`ERR_002: ACCESS_KEY could not be validated`
 |The key is wrong. Check it at https://access.redhat.com/offline/access and
-re-run `sudo rhokp-set-credentials`.
+re-run `sudo /usr/sbin/rhokp-set-credentials`.
 
 |Container restarts in a loop
 |`sudo podman logs rhokp` almost always names the cause on the first line.

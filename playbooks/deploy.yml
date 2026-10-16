@@ -32,7 +32,7 @@
 
     # Degrade instead of failing when no credentials were committed: install
     # everything, leave the portal stopped, and let an operator finish with
-    # `sudo rhokp-set-credentials`.
+    # `sudo /usr/sbin/rhokp-set-credentials`.
     rhokp_require_credentials: false
   roles:
     - rhokp

@@ -4,6 +4,15 @@
 - name: Install the rhokp-set-credentials helper
   ansible.builtin.template:
     src: rhokp-set-credentials.j2
-    dest: /usr/local/bin/rhokp-set-credentials
+    dest: "{{ rhokp_helper_path }}"
     mode: "0755"
   become: true
+
+# Earlier revisions put it in /usr/local/bin, which is outside RHEL's sudo
+# secure_path. Remove the stale copy so there is only one.
+- name: Remove the helper from the pre-1.0 location
+  ansible.builtin.file:
+    path: /usr/local/bin/rhokp-set-credentials
+    state: absent
+  become: true
+  when: rhokp_helper_path != '/usr/local/bin/rhokp-set-credentials'
