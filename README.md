@@ -658,23 +658,46 @@ therefore written not to need them: they route the reader through the
 **Portal** and **Terminal** tabs, both of which resolve correctly, and the
 terminal already starts on the bastion.
 
-### The Portal tab is an iframe
+### Why there is no "Portal" tab
 
-Showroom renders tab URLs in an iframe, so anything the portal sends that
-forbids framing produces a blank pane. The bastion drop-in strips those
-headers:
+`${DOMAIN}` does not mean what the upstream reference says it means on this
+asset. It describes it as "the apps domain of the OpenShift cluster", but
+measured on a live order (GUID `6wrqg`, cluster `ocpv07`):
+
+```yaml
+url: 'https://app-secure-${GUID}.${DOMAIN}'
+# served as:
+url: 'https://app-secure-6wrqg.bastion-6wrqg.apps.ocpv07.rhdp.net'
+```
+
+`${GUID}` is right; `${DOMAIN}` expands to **Showroom's own route host**,
+`bastion-<guid>.<apps domain>`. The portal's hostname cannot be built from
+that — there is no way to strip the leading `bastion-<guid>.`, no other
+variable is offered, and hardcoding the apps domain would break on every
+other cluster.
+
+So `ui-config.yml` ships a Terminal tab only, and the guide sends readers to
+the URL on their order page. If you deploy this somewhere the apps domain is
+fixed and known, adding a Portal tab is a one-line change.
+
+### Framing headers
+
+Showroom renders tab URLs in an iframe, and the upstream reference warns that
+`X-Frame-Options` or a restrictive CSP will produce a blank pane. The bastion
+drop-in strips both:
 
 ```nginx
 proxy_hide_header X-Frame-Options;
 proxy_hide_header Content-Security-Policy;
 ```
 
-Set `rhokp_bastion_proxy_allow_iframe: false` to pass them through instead.
-It is on by default because the proxy exists to serve this tab, on a route
-that is ephemeral and single-user. Check what the portal actually sends with:
+In practice this is currently a **no-op**: checked at the origin, RHOKP's
+Apache 2.4.62 sends neither header. It is kept as insurance against a future
+image adding one. Set `rhokp_bastion_proxy_allow_iframe: false` to drop the
+lines. Re-check with:
 
 ```bash
-curl -sI https://app-secure-<guid>.<subdomain>/ | grep -iE 'x-frame|content-security'
+curl -sI http://127.0.0.1:8080/ | grep -iE 'x-frame|content-security'   # on the node
 ```
 
 ### Previewing the lab guide

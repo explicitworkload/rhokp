@@ -8,21 +8,27 @@ view_switcher:
   enabled: true
   default_mode: split
 
+# There is deliberately no "Portal" tab.
+#
+# Tab URLs substitute only ${GUID} and ${DOMAIN}, shell-style -- not the
+# AsciiDoc {attribute} syntax used in content pages. Reference:
+# https://github.com/rhpds/showroom_template_nookbag/blob/main/content/modules/ROOT/pages/ui-config.adoc
+#
+# That reference describes ${DOMAIN} as "the apps domain of the OpenShift
+# cluster". On this RHEL Field Asset it is not. Measured on a live order, with
+# GUID 6wrqg on cluster ocpv07:
+#
+#   url: 'https://app-secure-${GUID}.${DOMAIN}'
+#     -> https://app-secure-6wrqg.bastion-6wrqg.apps.ocpv07.rhdp.net
+#
+# ${DOMAIN} expands to Showroom's own route host, bastion-<guid>.<apps domain>,
+# so the portal's hostname cannot be built from it -- there is no way to strip
+# the leading "bastion-<guid>." and no other variable is available. Hardcoding
+# the apps domain would break on every other cluster.
+#
+# So the guide sends the reader to the URL on their order page instead, and
+# checks the portal from the Terminal tab, which does work.
 tabs:
-  # Tab URLs substitute ${GUID} and ${DOMAIN} at runtime, and nothing else.
-  # This is shell-style syntax, NOT the AsciiDoc {attribute} syntax used in
-  # content pages -- the latter leaves the braces literal and the tab fails
-  # with "server IP address could not be found".
-  #
-  # Reference:
-  # https://github.com/rhpds/showroom_template_nookbag/blob/main/content/modules/ROOT/pages/ui-config.adoc
-  #
-  # This tab is an iframe, so the portal must not forbid framing. The bastion
-  # proxy strips X-Frame-Options and CSP for that reason
-  # (rhokp_bastion_proxy_allow_iframe).
-  - name: Portal
-    url: 'https://app-secure-${GUID}.${DOMAIN}'
-
   - name: Terminal
     path: /wetty
     port: 443

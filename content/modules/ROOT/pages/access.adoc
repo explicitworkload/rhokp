@@ -3,12 +3,8 @@
 
 == Open it
 
-Click the **Portal** tab on the right. It opens the portal at your
-environment's public HTTPS address, already filled in for you.
-
-If you would rather use a separate browser window, both of these reach the
-same portal — the exact hostnames are on your RHDP order page, under
-*Through the bastion*:
+Your RHDP order page lists the portal's addresses under *Through the
+bastion*. Open the HTTPS one in a browser tab. Both reach the same portal:
 
 [cols="1,2",options="header"]
 |===
@@ -26,9 +22,8 @@ the bastion as plain HTTP.
 
 [NOTE]
 ====
-A cold start takes about 45 seconds while Solr builds its index. If the tab is
-blank or times out straight after provisioning, wait a moment and hit the
-refresh icon on the tab.
+A cold start takes about 45 seconds while Solr builds its index. A `502` or a
+timeout straight after provisioning usually just means it is still starting.
 ====
 
 == Confirm it from the terminal
