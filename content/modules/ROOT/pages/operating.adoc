@@ -65,8 +65,9 @@ environment, never in the unit file.
 |Symptom |Fix
 
 |`ERR_002: ACCESS_KEY could not be validated`
-|The key is wrong. Check it at https://access.redhat.com/offline/access and
-re-run `sudo /usr/sbin/rhokp-set-credentials`.
+|The key is wrong. Check it at
+https://access.redhat.com/offline/access[access.redhat.com/offline/access^]
+and re-run `sudo /usr/sbin/rhokp-set-credentials`.
 
 |Container restarts in a loop
 |`sudo podman logs rhokp` almost always names the cause on the first line.

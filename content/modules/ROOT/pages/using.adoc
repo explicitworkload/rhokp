@@ -6,7 +6,7 @@ served from the container on your node. Nothing leaves the environment.
 
 == Search
 
-Use the search box on the landing page. Solr indexes the full text of the
+In the portal tab you opened, use the search box on the landing page. Solr indexes the full text of the
 bundled documentation set, so searching works the same way it does online:
 
 * `podman quadlet` -- plain keyword search

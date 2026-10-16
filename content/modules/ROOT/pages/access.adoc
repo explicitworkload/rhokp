@@ -3,8 +3,37 @@
 
 == Open it
 
-Your RHDP order page lists the portal's addresses under *Through the
-bastion*. Open the HTTPS one in a browser tab. Both reach the same portal:
+The portal opens in a **new browser tab** — it cannot be shown in the pane on
+the right, because the right-hand pane can only address services on this
+Showroom host.
+
+// Rendered by the browser from this page's own hostname. Showroom is served
+// at bastion-<guid>.<apps domain> and the portal at app-secure-<guid>.<apps
+// domain>, so swapping the leading label gives the right address without
+// needing a value the platform never injects into the guide. If the script
+// does not run, nothing is inserted and the addresses below still apply.
+++++
+<p id="rhokp-portal-links"></p>
+<script>
+(function () {
+  try {
+    var host = window.location.hostname;
+    if (!/^bastion-/.test(host)) { return; }
+    var el = document.getElementById('rhokp-portal-links');
+    if (!el) { return; }
+    var https = 'https://' + host.replace(/^bastion-/, 'app-secure-');
+    var http  = 'http://'  + host.replace(/^bastion-/, 'app-');
+    el.innerHTML =
+      '<a href="' + https + '" target="_blank" rel="noopener noreferrer">' +
+      'Open the portal in a new tab</a> &nbsp;<span style="opacity:.7">(' +
+      '<a href="' + http + '" target="_blank" rel="noopener noreferrer">' +
+      'plain HTTP</a>)</span>';
+  } catch (e) { /* leave the static addresses below in place */ }
+})();
+</script>
+++++
+
+Your RHDP order page lists the same addresses under *Through the bastion*:
 
 [cols="1,2",options="header"]
 |===

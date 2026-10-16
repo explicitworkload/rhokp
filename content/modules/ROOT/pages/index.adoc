@@ -16,7 +16,7 @@ through your lab's public URL.
 |Thing |Where
 
 |The portal
-|xref:access.adoc[Through the bastion URL]
+|xref:access.adoc[A new browser tab] — not the pane on the right
 
 |The RHEL node running it
 |`{portal_node}` — from the bastion, `ssh {portal_node}`
