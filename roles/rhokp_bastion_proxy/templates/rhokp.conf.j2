@@ -32,6 +32,16 @@ location {{ rhokp_bastion_proxy_path }} {
     proxy_set_header X-Forwarded-Proto $scheme;
     proxy_set_header X-Forwarded-Host  $host;
 
+{% if rhokp_bastion_proxy_allow_iframe | bool %}
+    # Showroom loads the portal in an iframe for its "Portal" tab. Any
+    # X-Frame-Options or frame-ancestors CSP from the portal turns that tab
+    # into a blank pane, so they are dropped here. Defensible on an ephemeral
+    # single-user lab route; set rhokp_bastion_proxy_allow_iframe=false to
+    # pass the portal's own framing headers through untouched.
+    proxy_hide_header X-Frame-Options;
+    proxy_hide_header Content-Security-Policy;
+{% endif %}
+
     proxy_buffering      off;
     proxy_redirect       off;
     proxy_connect_timeout 15s;

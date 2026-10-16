@@ -10,6 +10,10 @@ rhokp_bastion_proxy_port: 8080
 # serve other things alongside it.
 rhokp_bastion_proxy_path: "/"
 
+# Strip framing headers from the portal's responses so Showroom's "Portal"
+# tab, which is an iframe, can render it. See "Showroom UI" in the README.
+rhokp_bastion_proxy_allow_iframe: true
+
 # Where the platform's nginx looks for drop-in location blocks.
 rhokp_bastion_proxy_dir: /etc/nginx/proxy.d
 rhokp_bastion_proxy_file: rhokp.conf

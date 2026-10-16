@@ -9,10 +9,17 @@ view_switcher:
   default_mode: split
 
 tabs:
-  # Tab URLs substitute ${GUID} and ${DOMAIN} at runtime. This is shell-style
-  # syntax, NOT the AsciiDoc {attribute} syntax used inside content pages --
-  # using the latter here leaves the braces literal and the tab fails with
-  # "server IP address could not be found".
+  # Tab URLs substitute ${GUID} and ${DOMAIN} at runtime, and nothing else.
+  # This is shell-style syntax, NOT the AsciiDoc {attribute} syntax used in
+  # content pages -- the latter leaves the braces literal and the tab fails
+  # with "server IP address could not be found".
+  #
+  # Reference:
+  # https://github.com/rhpds/showroom_template_nookbag/blob/main/content/modules/ROOT/pages/ui-config.adoc
+  #
+  # This tab is an iframe, so the portal must not forbid framing. The bastion
+  # proxy strips X-Frame-Options and CSP for that reason
+  # (rhokp_bastion_proxy_allow_iframe).
   - name: Portal
     url: 'https://app-secure-${GUID}.${DOMAIN}'
 

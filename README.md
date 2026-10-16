@@ -52,7 +52,7 @@ any RHEL host you can reach, with no RHDP involvement at all. Start at
 - [How the credentials are protected](#how-the-credentials-are-protected)
 - [Configuration](#configuration)
 - [Day-two operations](#day-two-operations)
-- [Previewing the lab guide](#previewing-the-lab-guide)
+- [Showroom UI and lab guide](#showroom-ui-and-lab-guide)
 - [Troubleshooting](#troubleshooting)
 - [Licence](#licence)
 
@@ -628,7 +628,56 @@ Useful tags: `--tags preflight,secrets,image,deploy,firewall,verify`.
 
 ---
 
-## Previewing the lab guide
+## Showroom UI and lab guide
+
+Reference:
+[nookbag ui-config.adoc](https://github.com/rhpds/showroom_template_nookbag/blob/main/content/modules/ROOT/pages/ui-config.adoc).
+
+### Two substitution systems, easily confused
+
+They look similar and are not interchangeable.
+
+| Where | Syntax | Source | Available |
+| --- | --- | --- | --- |
+| `ui-config.yml` tab URLs | `${GUID}`, `${DOMAIN}` | Showroom, at runtime | **only those two** |
+| `content/**.adoc` pages | `{attribute}` | `user_data`, overlaid onto `content/antora.yml` defaults | whatever the asset publishes |
+| `playbooks/*.yml` | `{{ guid }}`, `{{ field_asset.x }}` | Ansible extra-vars from the runner | `guid`, `subdomain`, `field_asset.*` |
+
+The third row is the one the platform README advertises, and it works: the
+runner writes `/opt/field-content/extra-vars.yml` and the playbook gets real
+values. Confirmed on a live order — `field_asset.route_app` rendered as
+`app-ppbkv.apps.ocpv02.rhdp.net` in the generated nginx drop-in, and the
+bastion play is gated on `field_asset.enable_bastion_proxy` and ran.
+
+**That says nothing about the lab guide.** Showroom is a separate pipeline
+that builds the Antora site from `user_data`, not from the playbook's
+extra-vars. On a live order every attribute in the rendered guide was still
+the `antora.yml` default, so this asset publishes no
+`bastion_public_hostname`, `guid` or `subdomain` for the guide. The pages are
+therefore written not to need them: they route the reader through the
+**Portal** and **Terminal** tabs, both of which resolve correctly, and the
+terminal already starts on the bastion.
+
+### The Portal tab is an iframe
+
+Showroom renders tab URLs in an iframe, so anything the portal sends that
+forbids framing produces a blank pane. The bastion drop-in strips those
+headers:
+
+```nginx
+proxy_hide_header X-Frame-Options;
+proxy_hide_header Content-Security-Policy;
+```
+
+Set `rhokp_bastion_proxy_allow_iframe: false` to pass them through instead.
+It is on by default because the proxy exists to serve this tab, on a route
+that is ephemeral and single-user. Check what the portal actually sends with:
+
+```bash
+curl -sI https://app-secure-<guid>.<subdomain>/ | grep -iE 'x-frame|content-security'
+```
+
+### Previewing the lab guide
 
 The Showroom guide is a standard Antora site. To render it locally:
 
