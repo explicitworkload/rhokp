@@ -397,9 +397,8 @@ it is unnecessary — nginx on the bastion is what listens on 8443 there.
 The Showroom guide is a standard Antora site. To render it locally:
 
 ```bash
-npm install          # one-off; installs Antora and the two theme extensions
-npm run build        # writes ./www
-npx -y http-server www -p 8081 -c-1
+npm install     # one-off; installs Antora and the two theme extensions
+npm run preview # builds ./www and serves it on 8081
 ```
 
 Then open <http://localhost:8081>.

@@ -4,7 +4,7 @@
   "description": "Local-only tooling to preview the Showroom lab guide. Not used by RHDP.",
   "scripts": {
     "build": "antora --fetch site.yml",
-    "preview": "antora --fetch site.yml && npx -y http-server www -p 8081 -c-1"
+    "preview": "antora --fetch site.yml && python3 -m http.server 8081 --bind 127.0.0.1 --directory www"
   },
   "devDependencies": {
     "@antora/cli": "3.1.10",
