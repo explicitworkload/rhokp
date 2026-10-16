@@ -105,15 +105,18 @@ If you prefer not to keep the vault password on disk, drop
 
 Three separate problems, three different mechanisms.
 
-### In this git repository — Ansible Vault (real encryption)
+### In this git repository — nothing
 
-`scripts/init-secrets.sh` writes `playbooks/secrets/access-key.vault` and
-`playbooks/secrets/pull-secret.json.vault`, both AES256 via Ansible Vault. Those
-two files are ciphertext and are safe to commit to a public repo. The password
-that opens them lives in `playbooks/secrets/vault-password`, which `.gitignore` blocks.
+This repository is public and contains **no credentials in any form**, not even
+encrypted ones. `.gitignore` is deny-by-default inside `playbooks/secrets/`, so
+neither a stray plaintext `pull-secret.json` nor a `.vault` file can be
+committed by accident.
 
-`.gitignore` is deny-by-default inside `playbooks/secrets/`, so dropping a stray
-plaintext `pull-secret.json` in there will not get it committed by accident.
+`scripts/init-secrets.sh` writes `access-key.vault`, `pull-secret.json.vault`
+and `vault-password` there for **local use only**. The vault files are genuine
+AES256, so they are safe to commit to a *private* fork — but published
+ciphertext of a live Red Hat entitlement can be cached and indexed forever, and
+there is no way to recall it, so it is simply never pushed from here.
 
 Day-to-day:
 
@@ -126,7 +129,7 @@ scripts/init-secrets.sh --rekey     # change the vault password
 You can skip the vault entirely for a one-off run:
 
 ```bash
-ansible-playbook site.yml \
+ansible-playbook playbooks/standalone.yml \
   -e rhokp_access_key='<key>' \
   -e rhokp_pull_secret_path=./pull-secret.json
 ```
@@ -296,7 +299,7 @@ for the platform side.
 | Collection git repo | `https://github.com/explicitworkload/rhokp` |
 | Git revision | `main` |
 | Playbook entrypoint | `playbooks/deploy.yml` |
-| **Private git repo?** | **checked**, with a read token — see [Credentials](#credentials-on-rhdp) |
+| Private git repo? | unchecked for this public repo — see [Credentials](#credentials-on-rhdp) |
 | **Install proxy on bastion?** | **checked** — see [Why the proxy is required](#why-the-proxy-is-required) |
 | Deploy Showroom? | checked, **Showroom path left empty** (files are at the repo root) |
 | Node count | `1` |
@@ -337,11 +340,15 @@ order-form field for custom variables and no vault password**, so the only way
 to a turnkey deploy is to ship the credentials in the repo. Without the pull
 secret the image cannot even be pulled.
 
-On a **private** repo, commit the vault password alongside the vault files:
+Nothing credential-shaped is committed here, so **an order against this public
+repo always lands in degraded mode** — see below. To get a turnkey deploy, fork
+into a private repo and commit all three files:
 
 ```bash
 scripts/init-secrets.sh
-git add -f playbooks/secrets/vault-password   # normally gitignored
+git add -f playbooks/secrets/access-key.vault \
+           playbooks/secrets/pull-secret.json.vault \
+           playbooks/secrets/vault-password
 ```
 
 `resolve_secrets.yml` then shells out to `ansible-vault` itself, because the

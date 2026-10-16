@@ -7,15 +7,17 @@ rhokp-access-key
 !*.vault
 
 # --- secret material -------------------------------------------------------
-# Deny-by-default inside playbooks/secrets. Only the AES256 .vault files and
-# the docs get through; the vault password does NOT.
+# This is a PUBLIC repository, so nothing credential-shaped is committed --
+# not even the AES256 vault files. Deny-by-default; only the docs get through.
 playbooks/secrets/*
 !playbooks/secrets/.gitkeep
 !playbooks/secrets/README.md
-!playbooks/secrets/*.vault
 
-# The vault password stays ignored by the rule above. To make an RHDP deploy
-# turnkey you must deliberately override that on a PRIVATE repo:
+# Run scripts/init-secrets.sh to recreate the vault files locally. If you fork
+# this into a PRIVATE repo and want a turnkey RHDP deploy, override the rule
+# deliberately:
+#     git add -f playbooks/secrets/access-key.vault
+#     git add -f playbooks/secrets/pull-secret.json.vault
 #     git add -f playbooks/secrets/vault-password
 # See "RHDP" in README.md before you do.
 

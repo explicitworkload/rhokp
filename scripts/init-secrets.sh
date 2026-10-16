@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 #
-# Turn your plaintext RHOKP credentials into Ansible Vault files that are safe
-# to commit.
+# Turn your plaintext RHOKP credentials into local Ansible Vault files.
 #
-#   playbooks/secrets/access-key.vault        <- AES256, safe to commit
-#   playbooks/secrets/pull-secret.json.vault  <- AES256, safe to commit
-#   playbooks/secrets/vault-password          <- the password; gitignored
 #
-# Committing the password is only ever appropriate on a PRIVATE repo, to make
-# an unattended RHDP deploy turnkey. See "RHDP" in README.md.
+#   playbooks/secrets/access-key.vault        <- AES256
+#   playbooks/secrets/pull-secret.json.vault  <- AES256
+#   playbooks/secrets/vault-password          <- the password
+#
+# All three are gitignored. This repo is public, so no credential material is
+# committed -- not even the encrypted files. Committing them is only ever
+# appropriate on a PRIVATE fork. See "RHDP" in README.md.
 #
 # Usage:
 #   scripts/init-secrets.sh                       # prompt for anything missing
@@ -129,7 +130,7 @@ info "Encrypted playbooks/secrets/access-key.vault"
 
 cat <<EOF
 
-Done. Both .vault files are AES256 encrypted and safe to commit.
+Done. Both .vault files are AES256 encrypted, and all three are gitignored.
 
 Deploy over SSH:
   ansible-galaxy collection install -r requirements.yml
@@ -137,8 +138,10 @@ Deploy over SSH:
     --vault-password-file playbooks/secrets/vault-password
 
 For an unattended RHDP deploy the runner cannot be given a vault password, so
-it has to be committed. Only do this on a PRIVATE repo:
-  git add -f playbooks/secrets/vault-password
+all three must be committed. Only do this on a PRIVATE fork:
+  git add -f playbooks/secrets/access-key.vault \\
+             playbooks/secrets/pull-secret.json.vault \\
+             playbooks/secrets/vault-password
 
 The plaintext copies are still on disk and gitignored. Once you have confirmed a
 successful deploy you can remove them:
