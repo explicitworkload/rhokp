@@ -1,0 +1,85 @@
+---
+- name: Remove the Red Hat Offline Knowledge Portal
+  hosts: rhokp
+  gather_facts: true
+
+  tasks:
+    - name: Resolve deployment mode and load role defaults
+      ansible.builtin.include_role:
+        name: rhokp
+        tasks_from: mode.yml
+        public: true
+
+    - name: Stop the portal
+      ansible.builtin.systemd_service:
+        name: "{{ _rhokp_unit }}"
+        scope: "{{ _rhokp_scope }}"
+        state: stopped
+      become: "{{ _rhokp_become }}"
+      environment: "{{ _rhokp_env }}"
+      failed_when: false
+
+    - name: Remove the quadlet unit
+      ansible.builtin.file:
+        path: "{{ _rhokp_quadlet_dir }}/{{ rhokp_service_name }}.container"
+        state: absent
+      become: "{{ _rhokp_become }}"
+
+    - name: Reload systemd
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+        scope: "{{ _rhokp_scope }}"
+      become: "{{ _rhokp_become }}"
+      environment: "{{ _rhokp_env }}"
+
+    # Removing the quadlet file does not clear the unit's last result, so
+    # systemd keeps listing a "not-found / failed" rhokp.service forever.
+    - name: Clear the residual failed unit state
+      ansible.builtin.command: >-
+        systemctl {{ '--user' if rhokp_rootless | bool else '--system' }}
+        reset-failed {{ _rhokp_unit }}
+      become: "{{ _rhokp_become }}"
+      environment: "{{ _rhokp_env }}"
+      changed_when: false
+      failed_when: false
+
+    - name: Remove the access key secret
+      containers.podman.podman_secret:
+        name: "{{ rhokp_access_key_secret_name }}"
+        state: absent
+      become: "{{ _rhokp_become }}"
+      environment: "{{ _rhokp_env }}"
+
+    - name: Remove the state directory and any persisted authfile
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      become: "{{ _rhokp_become }}"
+      loop:
+        - "{{ _rhokp_conf_dir }}"
+        - "{{ _rhokp_authfile }}"
+
+    - name: Remove the portal image
+      containers.podman.podman_image:
+        name: "{{ rhokp_image }}"
+        state: absent
+      become: "{{ _rhokp_become }}"
+      environment: "{{ _rhokp_env }}"
+      when: rhokp_remove_image | default(false) | bool
+
+    - name: Gather service facts to see whether firewalld is running
+      ansible.builtin.service_facts:
+      when: rhokp_manage_firewall | bool
+
+    - name: Close the portal ports
+      ansible.posix.firewalld:
+        port: "{{ item }}/tcp"
+        zone: "{{ rhokp_firewall_zone }}"
+        permanent: true
+        immediate: true
+        state: disabled
+      become: true
+      loop: "{{ [rhokp_http_port, rhokp_https_port] }}"
+      when:
+        - rhokp_manage_firewall | bool
+        - ansible_facts.services['firewalld.service'].state | default('stopped') == 'running'

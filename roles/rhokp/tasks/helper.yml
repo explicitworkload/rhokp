@@ -1,0 +1,9 @@
+---
+# Always installed, not just in the degraded path -- it is also the quickest way
+# to rotate credentials by hand on a node you are already logged into.
+- name: Install the rhokp-set-credentials helper
+  ansible.builtin.template:
+    src: rhokp-set-credentials.j2
+    dest: /usr/local/bin/rhokp-set-credentials
+    mode: "0755"
+  become: true

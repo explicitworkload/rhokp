@@ -1,0 +1,38 @@
+---
+- name: Confirm the platform nginx is present
+  ansible.builtin.stat:
+    path: "{{ rhokp_bastion_proxy_dir }}"
+  register: _rhokp_proxy_dir
+
+- name: Fail clearly when the bastion proxy was not installed
+  ansible.builtin.assert:
+    that: _rhokp_proxy_dir.stat.isdir | default(false)
+    fail_msg: >-
+      {{ rhokp_bastion_proxy_dir }} does not exist, so the platform did not
+      install nginx on this bastion. Re-order with "Install proxy on bastion?"
+      checked, or skip this play by leaving field_asset.enable_bastion_proxy
+      false.
+    quiet: true
+
+- name: Write the RHOKP reverse proxy location
+  ansible.builtin.template:
+    src: rhokp.conf.j2
+    dest: "{{ rhokp_bastion_proxy_dir }}/{{ rhokp_bastion_proxy_file }}"
+    mode: "0644"
+  register: _rhokp_proxy_conf
+
+- name: Validate the nginx configuration
+  ansible.builtin.command: nginx -t
+  changed_when: false
+
+- name: Reload nginx
+  ansible.builtin.command: nginx -s reload
+  when: _rhokp_proxy_conf is changed
+  changed_when: true
+
+- name: Report the public URLs
+  ansible.builtin.debug:
+    msg:
+      - "Portal proxied from this bastion to {{ rhokp_bastion_proxy_target }}:{{ rhokp_bastion_proxy_port }}"
+      - "HTTP : http://{{ field_asset.route_app | default('app-<guid>.<subdomain>') }}"
+      - "HTTPS: https://{{ field_asset.route_app_secure | default('app-secure-<guid>.<subdomain>') }}"

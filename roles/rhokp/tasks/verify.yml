@@ -1,0 +1,28 @@
+---
+- name: Flush handlers so any pending restart happens before we probe
+  ansible.builtin.meta: flush_handlers
+
+- name: Wait for the portal to accept connections
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: "{{ rhokp_http_port }}"
+    timeout: "{{ rhokp_ready_timeout }}"
+
+- name: Wait for the portal to answer HTTP
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ rhokp_http_port }}/"
+    status_code: [200, 301, 302, 401, 403]
+    follow_redirects: none
+    validate_certs: false
+  register: _rhokp_probe
+  retries: "{{ (rhokp_ready_timeout | int / 10) | round(0, 'ceil') | int }}"
+  delay: 10
+  until: _rhokp_probe is succeeded
+
+- name: Report where the portal is listening
+  ansible.builtin.debug:
+    msg:
+      - "Red Hat Offline Knowledge Portal is up ({{ _rhokp_scope }} scope, unit {{ _rhokp_unit }})."
+      - "HTTP : http://{{ ansible_host | default(inventory_hostname) }}:{{ rhokp_http_port }}/"
+      - "{{ 'HTTPS: https://' ~ (ansible_host | default(inventory_hostname)) ~ ':' ~ rhokp_https_port ~ '/' if rhokp_publish_https | bool else 'HTTPS: not published' }}"
+      - "Logs : journalctl {{ '--user ' if rhokp_rootless | bool else '' }}-u {{ _rhokp_unit }} -f"

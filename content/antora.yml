@@ -1,0 +1,26 @@
+---
+name: modules
+title: Red Hat Offline Knowledge Portal
+version: ~
+nav:
+  - modules/ROOT/nav.adoc
+
+asciidoc:
+  attributes:
+    experimental: true
+    page-pagination: true
+
+    # Defaults so the guide renders during local development. At deploy time
+    # Showroom replaces these with the real values from user_data.
+    guid: abc123
+    subdomain: apps.cluster-abc123.ocpv00.rhdp.net
+    bastion_public_hostname: bastion.abc123.ocpv00.rhdp.net
+    ssh_user: lab-user
+    bastion_ssh_user_name: lab-user
+    bastion_ssh_password: password
+
+    # Portal specifics
+    portal_http_url: http://app-abc123.apps.cluster-abc123.ocpv00.rhdp.net
+    portal_https_url: https://app-secure-abc123.apps.cluster-abc123.ocpv00.rhdp.net
+    portal_service: rhokp.service
+    portal_node: node1

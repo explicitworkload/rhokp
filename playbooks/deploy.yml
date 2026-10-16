@@ -1,0 +1,48 @@
+---
+# RHDP Field Sourced Content entrypoint.
+# Order form -> Playbook entrypoint: playbooks/deploy.yml
+#
+# The platform supplies the inventory (groups `bastions` and `nodes`, with
+# ansible_become=true for all hosts) and the extra-vars `guid`, `subdomain` and
+# `field_asset.*`. Plays below follow the template's conventions: an empty host
+# list skips a play, because `when:` is not valid on a play.
+
+- name: Deploy the Red Hat Offline Knowledge Portal on the first workload node
+  hosts: "{{ groups['nodes'][0] if groups['nodes'] | default([]) | length > 0 else [] }}"
+  become: true
+  gather_facts: true
+  vars:
+    # The RHDP inventory sets ansible_become=true for every host, so facts are
+    # gathered as root and a rootless install would land in /root. Rootful is
+    # the correct model on these ephemeral workload nodes.
+    rhokp_rootless: false
+
+    # Nothing outside the bastion can reach this node, so bind wide and let the
+    # bastion nginx be the only way in.
+    rhokp_bind_address: "0.0.0.0"
+
+    # The bastion proxies plain HTTP; the Route terminates TLS at the edge.
+    # Publishing 8443 from the container as well costs nothing and lets you
+    # reach the portal's own HTTPS listener directly from the bastion.
+    rhokp_publish_https: true
+
+    # Node sizes go down to "small". Let the portal use what the node has
+    # rather than asserting caps the VM may not be able to honour.
+    rhokp_apply_resource_limits: false
+
+    # Degrade instead of failing when no credentials were committed: install
+    # everything, leave the portal stopped, and let an operator finish with
+    # `sudo rhokp-set-credentials`.
+    rhokp_require_credentials: false
+  roles:
+    - rhokp
+
+- name: Route the catalog Routes to the portal
+  hosts: "{{ groups['bastions'] if (field_asset.enable_bastion_proxy | default(false) | bool) else [] }}"
+  become: true
+  gather_facts: true
+  vars:
+    rhokp_bastion_proxy_target: "{{ groups['nodes'][0] }}"
+    rhokp_bastion_proxy_port: 8080
+  roles:
+    - rhokp_bastion_proxy

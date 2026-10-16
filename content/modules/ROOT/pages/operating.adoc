@@ -1,0 +1,96 @@
+= Operate and Troubleshoot
+:navtitle: 3. Operate and Troubleshoot
+
+Run these on the node unless stated otherwise.
+
+[source,bash,subs="attributes"]
+----
+ssh {ssh_user}@{bastion_public_hostname}
+ssh {portal_node}
+----
+
+== Service basics
+
+The portal is a systemd service generated from a Podman Quadlet unit.
+
+[source,bash,subs="attributes"]
+----
+sudo systemctl status {portal_service}
+sudo journalctl -u {portal_service} -f
+sudo systemctl restart {portal_service}
+----
+
+[source,bash]
+----
+sudo podman ps
+sudo podman logs rhokp
+----
+
+== Rotate the access key
+
+[source,bash]
+----
+sudo rhokp-set-credentials
+----
+
+It prompts for the pull secret and the access key, pulls the image if needed,
+stores the key as a Podman secret and restarts the portal. Use the same command
+if the portal was deployed without credentials and is sitting stopped.
+
+== Things that look broken but are not
+
+[cols="2,3",options="header"]
+|===
+|Symptom |Explanation
+
+|A stop takes ten seconds and the container exits `137`
+|PID 1 in the image ignores `SIGTERM`, so Podman always falls back to
+`SIGKILL`. The unit sets `SuccessExitStatus=137 143` so this does not show as a
+failure.
+
+|The portal is slow for the first minute
+|Solr is building its index. Give it about 45 seconds.
+
+|`podman inspect` shows `rhokp-access-key=*******`
+|Podman masks secret values. The real key is only in the running container's
+environment, never in the unit file.
+|===
+
+== Real failures
+
+[cols="2,3",options="header"]
+|===
+|Symptom |Fix
+
+|`ERR_002: ACCESS_KEY could not be validated`
+|The key is wrong. Check it at https://access.redhat.com/offline/access and
+re-run `sudo rhokp-set-credentials`.
+
+|Container restarts in a loop
+|`sudo podman logs rhokp` almost always names the cause on the first line.
+
+|Node answers on 8080 but the public URL returns `504`
+|The bastion proxy is not routing. See below.
+
+|Public HTTPS returns `400`, HTTP works
+|Something is serving TLS on a port that receives plain HTTP from the edge.
+|===
+
+[#proxy]
+== The bastion proxy
+
+The workload node has no public route. Nginx on the bastion listens on 8080 and
+8443 and forwards to the node.
+
+On the *bastion*:
+
+[source,bash,subs="attributes"]
+----
+cat /etc/nginx/proxy.d/rhokp.conf
+sudo nginx -t
+sudo nginx -s reload
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8080/
+----
+
+If `/etc/nginx/proxy.d/` does not exist, the environment was ordered without
+*Install proxy on bastion?* checked, and nothing is listening on those ports.

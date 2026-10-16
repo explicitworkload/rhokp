@@ -1,0 +1,15 @@
+---
+- name: Gather service facts to see whether firewalld is running
+  ansible.builtin.service_facts:
+
+- name: Open the portal ports
+  ansible.posix.firewalld:
+    port: "{{ item }}/tcp"
+    zone: "{{ rhokp_firewall_zone }}"
+    permanent: true
+    immediate: true
+    state: enabled
+  become: true
+  loop: "{{ [rhokp_http_port] + ([rhokp_https_port] if rhokp_publish_https | bool else []) }}"
+  when: >-
+    ansible_facts.services['firewalld.service'].state | default('stopped') == 'running'

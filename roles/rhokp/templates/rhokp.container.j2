@@ -1,0 +1,66 @@
+{{ ansible_managed | comment }}
+# Podman Quadlet unit for the Red Hat Offline Knowledge Portal.
+# systemd generates {{ _rhokp_unit }} from this file; edit the Ansible role,
+# not this file, or the next run will overwrite your changes.
+
+[Unit]
+Description=Red Hat Offline Knowledge Portal
+Documentation=https://catalog.redhat.com/software/containers/offline-knowledge-portal/rhokp-rhel9
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+ContainerName={{ rhokp_container_name }}
+Image={{ rhokp_image }}
+Pull=missing
+{% if rhokp_persist_authfile | bool %}
+AuthFile={{ _rhokp_authfile }}
+{% endif %}
+
+# ACCESS_KEY is injected from the podman secret store at start time, so the
+# value appears neither in this file nor in `podman inspect`.
+Secret={{ rhokp_access_key_secret_name }},type=env,target=ACCESS_KEY
+
+PublishPort={{ rhokp_bind_address }}:{{ rhokp_http_port }}:{{ rhokp_container_http_port }}
+{% if rhokp_publish_https | bool %}
+{% if rhokp_edge_tls | bool %}
+# TLS is terminated upstream, so this port must receive plain HTTP.
+PublishPort={{ rhokp_bind_address }}:{{ rhokp_https_port }}:{{ rhokp_container_http_port }}
+{% else %}
+PublishPort={{ rhokp_bind_address }}:{{ rhokp_https_port }}:{{ rhokp_container_https_port }}
+{% endif %}
+{% endif %}
+{% if rhokp_apply_resource_limits | bool %}
+
+PodmanArgs=--memory={{ rhokp_memory_limit }} --memory-reservation={{ rhokp_memory_reservation }} --cpus={{ rhokp_cpu_limit }}
+{% endif %}
+{% if rhokp_healthcheck_enabled | bool %}
+
+HealthCmd={{ rhokp_healthcheck_cmd }}
+HealthInterval=30s
+HealthStartPeriod=60s
+HealthTimeout=5s
+HealthRetries=3
+{% endif %}
+
+LogDriver=journald
+
+# PID 1 in this image is `mel`, which does not handle SIGTERM, so podman always
+# falls back to SIGKILL. Waiting longer than this just slows every restart down.
+StopTimeout={{ rhokp_stop_timeout }}
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=300
+TimeoutStopSec={{ rhokp_stop_timeout | int + 15 }}
+
+# Consequence of the above: a perfectly normal stop ends in 137 (SIGKILL) and
+# systemd would otherwise park the unit in "failed" every single time. Treating
+# 137/143 as success keeps `systemctl status` honest about real problems.
+# Trade-off: an OOM kill also exits 137, so it will no longer show as failed --
+# Restart=always still restarts it, and the kill is visible in `journalctl -k`.
+SuccessExitStatus=137 143
+
+[Install]
+WantedBy={{ 'default.target' if rhokp_rootless | bool else 'multi-user.target' }}

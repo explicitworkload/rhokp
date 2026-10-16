@@ -1,0 +1,54 @@
+---
+- name: Check that podman is installed
+  ansible.builtin.command: podman --version
+  register: _rhokp_podman_version_raw
+  changed_when: false
+  failed_when: false
+
+- name: Fail clearly when podman is missing
+  ansible.builtin.assert:
+    that: _rhokp_podman_version_raw.rc == 0
+    fail_msg: >-
+      podman is not installed (or not on PATH) on {{ inventory_hostname }}.
+      Install it with: sudo dnf -y install podman
+
+- name: Record the podman version
+  ansible.builtin.set_fact:
+    _rhokp_podman_version: >-
+      {{ _rhokp_podman_version_raw.stdout | regex_search('[0-9]+\.[0-9]+(\.[0-9]+)?') }}
+
+- name: Require a podman release that ships quadlet
+  ansible.builtin.assert:
+    that: _rhokp_podman_version is version('4.4', '>=')
+    fail_msg: >-
+      podman {{ _rhokp_podman_version }} is too old. This role deploys the portal
+      as a quadlet unit, which needs podman 4.4 or newer (RHEL 9.2+).
+    success_msg: "podman {{ _rhokp_podman_version }} supports quadlet"
+
+# Credential availability is decided in resolve_secrets.yml, which runs next.
+
+# --- rootless prerequisites ------------------------------------------------
+
+- name: Check that the user has a subuid range (rootless podman needs one)
+  ansible.builtin.command: "grep -q '^{{ ansible_facts.user_id }}:' /etc/subuid"
+  register: _rhokp_subuid
+  changed_when: false
+  failed_when: false
+  when: rhokp_rootless | bool
+
+- name: Fail clearly when the subuid range is missing
+  ansible.builtin.assert:
+    that: _rhokp_subuid.rc == 0
+    fail_msg: >-
+      {{ ansible_facts.user_id }} has no /etc/subuid range, so rootless podman cannot
+      start. Fix it with:
+      sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 {{ ansible_facts.user_id }}
+      -- or deploy rootful instead with -e rhokp_rootless=false
+  when: rhokp_rootless | bool
+
+- name: Enable linger so the user service survives logout and starts at boot
+  ansible.builtin.command: "loginctl enable-linger {{ ansible_facts.user_id }}"
+  args:
+    creates: "/var/lib/systemd/linger/{{ ansible_facts.user_id }}"
+  become: true
+  when: rhokp_rootless | bool

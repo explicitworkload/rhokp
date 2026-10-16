@@ -1,0 +1,29 @@
+---
+# Antora playbook. Do not modify -- the UI theme, extensions and output path are
+# managed by the Showroom template.
+site:
+  title: Red Hat Offline Knowledge Portal
+  url: https://github.com/explicitworkload/rhokp
+  start_page: modules::index.adoc
+
+content:
+  sources:
+    - url: .
+      start_path: content
+
+ui:
+  bundle:
+    url: https://github.com/rhpds/rhdp_showroom_theme/releases/download/latest/ui-bundle.zip
+    snapshot: true
+
+antora:
+  extensions:
+    - require: '@sntke/antora-mermaid-extension'
+      mermaid_library_url: https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs
+      script_stem: header-scripts
+      mermaid_initialize_options:
+        start_on_load: true
+    - require: '@andrew-jones/antora-tabs-extension'
+
+output:
+  dir: ./www

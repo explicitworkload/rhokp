@@ -1,0 +1,42 @@
+---
+namespace: explicitworkload
+name: rhokp
+version: 1.0.0
+readme: README.md
+authors:
+  - explicitworkload
+description: >
+  Deploy the Red Hat Offline Knowledge Portal on RHEL with podman, as a rootless
+  or rootful systemd Quadlet service. Runs standalone over SSH or as RHDP Field
+  Sourced Content on a bastion + workload nodes.
+license:
+  - MIT
+tags:
+  - rhel
+  - rhdp
+  - podman
+  - quadlet
+  - fieldcontent
+repository: https://github.com/explicitworkload/rhokp
+issues: https://github.com/explicitworkload/rhokp/issues
+
+# Keep the built collection to just the automation. playbooks/secrets/ is
+# deliberately NOT ignored -- the runner needs the vault files at deploy time.
+build_ignore:
+  - .git
+  - .gitignore
+  - .env
+  - .env.sample
+  - "*.retry"
+  - pull-secret.json
+  - rhokp-access-key
+  - k8s
+  - inventory.yml
+  # Showroom lab guide + its local preview tooling
+  - content
+  - site.yml
+  - ui-config.yml
+  - package.json
+  - package-lock.json
+  - node_modules
+  - www

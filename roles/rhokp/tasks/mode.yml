@@ -1,0 +1,44 @@
+---
+# Everything downstream branches on these facts rather than re-testing
+# rhokp_rootless in every task.
+
+- name: Derive rootless / rootful placement facts
+  ansible.builtin.set_fact:
+    _rhokp_become: "{{ not (rhokp_rootless | bool) }}"
+    _rhokp_scope: "{{ 'user' if rhokp_rootless | bool else 'system' }}"
+    _rhokp_unit: "{{ rhokp_service_name }}.service"
+
+# Rootless placement is derived from the facts of the account Ansible connected
+# as. If the play (or the inventory) turns become on, those facts describe root
+# instead, and the portal would silently be installed into /root with
+# XDG_RUNTIME_DIR=/run/user/0. Catch that here rather than halfway through.
+- name: Fail early if rootless was requested but facts were gathered as root
+  ansible.builtin.assert:
+    that: ansible_facts.user_uid | int != 0
+    fail_msg: >-
+      rhokp_rootless=true needs an unprivileged connection user, but facts for
+      {{ inventory_hostname }} were gathered as root -- something has enabled
+      become for this host (the RHDP inventory sets ansible_become=true for all
+      hosts). Either set `become: false` on the play that runs this role, or
+      deploy rootful with rhokp_rootless=false, which is the right choice on
+      RHDP workload nodes.
+    quiet: true
+  when: rhokp_rootless | bool
+
+- name: Set rootless (systemd user scope) paths and environment
+  when: rhokp_rootless | bool
+  ansible.builtin.set_fact:
+    _rhokp_quadlet_dir: "{{ ansible_facts.user_dir }}/.config/containers/systemd"
+    _rhokp_conf_dir: "{{ ansible_facts.user_dir }}/.config/rhokp"
+    _rhokp_authfile: "{{ ansible_facts.user_dir }}/.config/containers/auth.json"
+    _rhokp_env:
+      XDG_RUNTIME_DIR: "/run/user/{{ ansible_facts.user_uid }}"
+      DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ ansible_facts.user_uid }}/bus"
+
+- name: Set rootful (systemd system scope) paths and environment
+  when: not (rhokp_rootless | bool)
+  ansible.builtin.set_fact:
+    _rhokp_quadlet_dir: /etc/containers/systemd
+    _rhokp_conf_dir: /etc/rhokp
+    _rhokp_authfile: /etc/containers/auth.json
+    _rhokp_env: {}

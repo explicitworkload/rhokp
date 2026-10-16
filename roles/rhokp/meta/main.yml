@@ -1,0 +1,21 @@
+---
+galaxy_info:
+  role_name: rhokp
+  author: explicitworkload
+  description: >-
+    Deploy the Red Hat Offline Knowledge Portal as a podman quadlet service on
+    RHEL, rootless or rootful, with vault-encrypted credentials.
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: EL
+      versions:
+        - "9"
+        - "10"
+  galaxy_tags:
+    - podman
+    - quadlet
+    - redhat
+    - containers
+
+dependencies: []

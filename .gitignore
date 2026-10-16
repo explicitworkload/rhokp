@@ -1,0 +1,38 @@
+# --- plaintext credentials: never commit -----------------------------------
+pull-secret.json
+rhokp-access-key
+.env
+*.pem
+*.key
+!*.vault
+
+# --- secret material -------------------------------------------------------
+# Deny-by-default inside playbooks/secrets. Only the AES256 .vault files and
+# the docs get through; the vault password does NOT.
+playbooks/secrets/*
+!playbooks/secrets/.gitkeep
+!playbooks/secrets/README.md
+!playbooks/secrets/*.vault
+
+# The vault password stays ignored by the rule above. To make an RHDP deploy
+# turnkey you must deliberately override that on a PRIVATE repo:
+#     git add -f playbooks/secrets/vault-password
+# See "RHDP" in README.md before you do.
+
+# Legacy location, kept so an old checkout cannot leak one.
+.vault-password
+ansible/.vault-password
+
+# --- ansible runtime artefacts ---------------------------------------------
+collections/
+*.retry
+.ansible/
+
+# --- showroom: build output and local preview tooling ----------------------
+www/
+node_modules/
+
+# --- editors / OS ----------------------------------------------------------
+.DS_Store
+.idea/
+.vscode/

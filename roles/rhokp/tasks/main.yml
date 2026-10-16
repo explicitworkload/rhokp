@@ -1,0 +1,51 @@
+---
+- name: Resolve deployment mode
+  ansible.builtin.import_tasks: mode.yml
+  tags: [always]
+
+- name: Run preflight checks
+  ansible.builtin.import_tasks: preflight.yml
+  tags: [rhokp, preflight]
+
+- name: Resolve credentials
+  ansible.builtin.import_tasks: resolve_secrets.yml
+  tags: [rhokp, secrets]
+
+- name: Install secret material
+  ansible.builtin.import_tasks: secrets.yml
+  when: _rhokp_have_credentials | bool
+  tags: [rhokp, secrets]
+
+- name: Pull the portal image
+  ansible.builtin.import_tasks: image.yml
+  when: _rhokp_have_credentials | bool
+  tags: [rhokp, image]
+
+- name: Deploy the quadlet unit
+  ansible.builtin.import_tasks: deploy.yml
+  tags: [rhokp, deploy]
+
+- name: Install the credential helper
+  ansible.builtin.import_tasks: helper.yml
+  tags: [rhokp, deploy]
+
+- name: Open the firewall
+  ansible.builtin.import_tasks: firewall.yml
+  when: rhokp_manage_firewall | bool
+  tags: [rhokp, firewall]
+
+- name: Wait for the portal to become ready
+  ansible.builtin.import_tasks: verify.yml
+  when:
+    - rhokp_wait_for_ready | bool
+    - _rhokp_have_credentials | bool
+  tags: [rhokp, verify]
+
+- name: Explain how to finish a credential-less install
+  ansible.builtin.debug:
+    msg:
+      - "RHOKP is installed but NOT running -- no credentials were available."
+      - "On {{ inventory_hostname }}, run:  sudo rhokp-set-credentials"
+      - "It prompts for the pull secret and access key, then starts the portal."
+  when: not (_rhokp_have_credentials | bool)
+  tags: [rhokp, verify]

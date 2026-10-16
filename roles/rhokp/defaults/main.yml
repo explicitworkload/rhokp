@@ -1,0 +1,99 @@
+---
+# ---------------------------------------------------------------------------
+# Image
+# ---------------------------------------------------------------------------
+rhokp_image: registry.redhat.io/offline-knowledge-portal/rhokp-rhel9:latest
+rhokp_registry_host: registry.redhat.io
+# Re-pull the image even if a copy is already present locally.
+rhokp_image_force_pull: false
+
+# ---------------------------------------------------------------------------
+# Placement
+# ---------------------------------------------------------------------------
+# true  -> rootless systemd *user* service owned by ansible_user
+# false -> root-owned systemd *system* service
+rhokp_rootless: true
+
+rhokp_container_name: rhokp
+rhokp_service_name: rhokp
+
+# ---------------------------------------------------------------------------
+# Networking
+# ---------------------------------------------------------------------------
+rhokp_http_port: 8080
+rhokp_https_port: 8443
+rhokp_publish_https: true
+
+# Ports the application listens on inside the container.
+rhokp_container_http_port: 8080
+rhokp_container_https_port: 8443
+
+# Set true when something upstream already terminates TLS and forwards PLAIN
+# HTTP to rhokp_https_port -- an OpenShift edge Route, an ALB, etc. The host's
+# HTTPS port is then published to the container's HTTP port, because the
+# container's own TLS listener would answer a plaintext request with 400.
+# Required when RHDP catalog Routes point straight at this host's 8443.
+rhokp_edge_tls: false
+# Bind published ports to this address. 0.0.0.0 exposes the portal on the LAN;
+# use 127.0.0.1 to keep it host-local behind a reverse proxy.
+rhokp_bind_address: "0.0.0.0"
+
+rhokp_manage_firewall: true
+rhokp_firewall_zone: public
+
+# ---------------------------------------------------------------------------
+# Resources (mirrors the limits from k8s/rhokp-deployment.yaml)
+# ---------------------------------------------------------------------------
+# Rootful containers always get the cgroup controllers they ask for. Rootless
+# ones only do if systemd delegates cpu/memory to the user slice, so limits are
+# off by default there -- see "Resource limits" in the repository README.
+rhokp_apply_resource_limits: "{{ not (rhokp_rootless | bool) }}"
+rhokp_cpu_limit: "2"
+rhokp_memory_limit: "4g"
+rhokp_memory_reservation: "1g"
+
+# ---------------------------------------------------------------------------
+# Secrets
+# ---------------------------------------------------------------------------
+# Vault material, resolved on the control node. playbook_dir is <collection>/
+# playbooks in both the standalone and the RHDP runner layouts, so these paths
+# hold either way.
+rhokp_secrets_dir: "{{ playbook_dir }}/secrets"
+rhokp_access_key_file: "{{ rhokp_secrets_dir }}/access-key.vault"
+rhokp_pull_secret_file: "{{ rhokp_secrets_dir }}/pull-secret.json.vault"
+
+# Only present when it has been deliberately committed for an unattended runner
+# that cannot be given --vault-password-file. See "RHDP" in the README.
+rhokp_vault_password_file: "{{ rhokp_secrets_dir }}/vault-password"
+
+# false -> if credentials cannot be resolved, install what we can and leave the
+#          portal stopped awaiting `rhokp-set-credentials`.
+# true  -> hard-fail instead.
+rhokp_require_credentials: false
+
+# Name of the podman secret holding ACCESS_KEY. The quadlet unit injects it as
+# an environment variable at container start, so the value never appears in the
+# unit file nor in `podman inspect`'s Config.Env.
+rhokp_access_key_secret_name: rhokp-access-key
+
+# Keep the registry authfile on the host after pulling the image. Leaving this
+# false writes it to a temp dir, pulls, then shreds it. Turn it on only if you
+# want the unit to be able to re-pull unattended after an image prune.
+rhokp_persist_authfile: false
+
+# ---------------------------------------------------------------------------
+# Rollout
+# ---------------------------------------------------------------------------
+rhokp_wait_for_ready: true
+rhokp_ready_timeout: 300
+
+# Seconds the container gets to shut down before podman SIGKILLs it. PID 1 in
+# this image ignores SIGTERM, so a larger value only makes restarts slower.
+# TimeoutStopSec is derived from this (+15s).
+rhokp_stop_timeout: 10
+
+# The upstream image is not documented to ship curl, so the in-container
+# healthcheck is off by default. Enable it only if you have confirmed the
+# command exists inside the image.
+rhokp_healthcheck_enabled: false
+rhokp_healthcheck_cmd: "curl -fsS http://localhost:8080/ || exit 1"

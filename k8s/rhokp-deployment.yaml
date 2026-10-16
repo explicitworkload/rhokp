@@ -1,0 +1,117 @@
+---
+# Red Hat Offline Knowledge Portal -- Kubernetes / OpenShift manifests.
+#
+# This file deliberately contains NO credentials. It references two secrets that
+# you create out-of-band so they never land in git:
+#
+#   redhat-registry-secret  kubernetes.io/dockerconfigjson  -- pulls the image
+#   rhokp-access-key        Opaque, key ACCESS_KEY          -- unlocks the portal
+#
+# Create both in one step:
+#
+#   scripts/k8s-create-secrets.sh
+#
+# ...or by hand:
+#
+#   oc create namespace rhokp-portal
+#
+#   oc create secret docker-registry redhat-registry-secret \
+#     --namespace rhokp-portal \
+#     --from-file=.dockerconfigjson=/path/to/pull-secret.json
+#
+#   oc create secret generic rhokp-access-key \
+#     --namespace rhokp-portal \
+#     --from-file=ACCESS_KEY=/path/to/rhokp-access-key
+#
+# Get a pull secret from https://console.redhat.com/openshift/install/pull-secret
+#
+# Then: oc apply -f k8s/rhokp-deployment.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: rhokp-portal
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rhokp-deployment
+  namespace: rhokp-portal
+  labels:
+    app: rhokp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rhokp
+  template:
+    metadata:
+      labels:
+        app: rhokp
+    spec:
+      imagePullSecrets:
+        - name: redhat-registry-secret
+      containers:
+        - name: rhokp
+          image: registry.redhat.io/offline-knowledge-portal/rhokp-rhel9:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: rhokp-access-key
+                  key: ACCESS_KEY
+          ports:
+            - containerPort: 8080
+              name: http
+            - containerPort: 8443
+              name: https
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2"
+              memory: "4Gi"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+              scheme: HTTP
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 15
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 60
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rhokp-service
+  namespace: rhokp-portal
+spec:
+  type: ClusterIP
+  selector:
+    app: rhokp
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+      name: http

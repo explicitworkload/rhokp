@@ -1,0 +1,25 @@
+---
+# Hosts for the standalone (direct SSH) deploy: playbooks/standalone.yml
+# The RHDP field-content runner supplies its own inventory and ignores this.
+#
+# Authenticate however the lab hands you access:
+#   key   : ansible_ssh_private_key_file: ~/.ssh/id_rsa
+#   pass  : ansible-playbook ... --ask-pass --ask-become-pass   (needs sshpass)
+all:
+  children:
+    rhokp:
+      hosts:
+        rhel-lab:
+          ansible_host: ssh.ocpv02.rhdp.net
+          ansible_port: 30129
+          ansible_user: lab-user
+          # ansible_ssh_private_key_file: ~/.ssh/id_rsa
+
+          # This host sits behind RHDP catalog Routes that publish its 8080 and
+          # 8443. The HTTPS Route is edge-terminated, so port 8443 receives
+          # plain HTTP and must be served by the container's HTTP listener.
+          #   http://app-<guid>.<subdomain>        -> this host:8080
+          #   https://app-secure-<guid>.<subdomain> -> this host:8443
+          rhokp_edge_tls: true
+      vars:
+        ansible_python_interpreter: /usr/bin/python3

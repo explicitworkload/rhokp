@@ -1,0 +1,79 @@
+= How It Was Deployed
+:navtitle: 4. How It Was Deployed
+
+Everything in this environment was built by an Ansible collection, so you can
+reproduce it on a customer's disconnected site.
+
+== The path a request takes
+
+[mermaid]
+....
+flowchart LR
+    U[Browser] -->|HTTPS| R[OpenShift edge Route]
+    R -->|plain HTTP :8443| N[Nginx on bastion]
+    U -->|HTTP| R2[Route] --> |:8080| N
+    N -->|proxy_pass :8080| P[RHOKP container on node]
+    P --> S[(Solr index baked into the image)]
+....
+
+TLS stops at the Route. The bastion sees plain HTTP on both ports, which is why
+the Nginx drop-in proxies HTTP rather than HTTPS.
+
+== What ran
+
+The RHDP platform started `field-content.service` on the bastion, which
+installed the collection and ran `playbooks/deploy.yml`. Two plays:
+
+. **On the workload node** -- the `rhokp` role: preflight checks, decrypt the
+  credentials, store the access key as a Podman secret, pull the image, write a
+  Quadlet unit, open the firewall, wait for HTTP.
+. **On the bastion** -- the `rhokp_bastion_proxy` role: write
+  `/etc/nginx/proxy.d/rhokp.conf`, validate, reload.
+
+== Why Quadlet
+
+The container is described by a `.container` file that systemd turns into a
+real service, so it gets restart policy, ordering and journal integration for
+free:
+
+[source,ini]
+----
+[Container]
+Image=registry.redhat.io/offline-knowledge-portal/rhokp-rhel9:latest
+Secret=rhokp-access-key,type=env,target=ACCESS_KEY
+PublishPort=0.0.0.0:8080:8080
+
+[Service]
+Restart=always
+SuccessExitStatus=137 143
+----
+
+`Secret=` is the important line. The access key is injected from Podman's
+secret store at start time, so it is in neither the unit file nor
+`podman inspect` output.
+
+== Where the credentials came from
+
+They are committed to the project repository as Ansible Vault files. The RHDP
+runner cannot be handed a vault password on the command line, so the password
+ships in the same (private) repository and the role invokes `ansible-vault`
+itself.
+
+[IMPORTANT]
+====
+That means repository privacy is what actually protects these credentials. In
+production, back the Podman secret with an external driver such as `pass`, or
+pull the key from a KMS at start time.
+====
+
+== Reproducing it
+
+[source,bash]
+----
+git clone https://github.com/explicitworkload/rhokp
+cd rhokp
+scripts/init-secrets.sh
+ansible-galaxy collection install -r requirements.yml
+ansible-playbook playbooks/standalone.yml \
+  --vault-password-file playbooks/secrets/vault-password
+----

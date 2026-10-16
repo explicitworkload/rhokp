@@ -1,0 +1,66 @@
+---
+- name: Validate the pull secret before shipping it anywhere
+  ansible.builtin.assert:
+    that:
+      - rhokp_pull_secret | from_json is mapping
+      - rhokp_registry_host in (rhokp_pull_secret | from_json).get('auths', {})
+    fail_msg: >-
+      The pull secret is not valid JSON containing an "auths" entry for
+      {{ rhokp_registry_host }}. Download a current one from
+      https://console.redhat.com/openshift/install/pull-secret
+    quiet: true
+
+- name: Pull the portal image
+  always:
+    - name: Remove the staged registry authfile
+      ansible.builtin.file:
+        path: "{{ _rhokp_auth_staging.path }}"
+        state: absent
+      become: "{{ _rhokp_become }}"
+      when:
+        - not (rhokp_persist_authfile | bool)
+        - _rhokp_auth_staging.path is defined
+      changed_when: false
+  block:
+    - name: Create a staging directory for the registry authfile
+      ansible.builtin.tempfile:
+        state: directory
+        prefix: rhokp-auth-
+      register: _rhokp_auth_staging
+      become: "{{ _rhokp_become }}"
+      changed_when: false
+      when: not (rhokp_persist_authfile | bool)
+
+    - name: Choose where the authfile goes
+      ansible.builtin.set_fact:
+        _rhokp_authfile_path: >-
+          {{ _rhokp_authfile if rhokp_persist_authfile | bool
+             else _rhokp_auth_staging.path ~ '/auth.json' }}
+
+    - name: Ensure the parent directory of a persisted authfile exists
+      ansible.builtin.file:
+        path: "{{ _rhokp_authfile_path | dirname }}"
+        state: directory
+        mode: "0700"
+      become: "{{ _rhokp_become }}"
+      when: rhokp_persist_authfile | bool
+
+    - name: Write the registry authfile
+      ansible.builtin.copy:
+        content: "{{ rhokp_pull_secret }}"
+        dest: "{{ _rhokp_authfile_path }}"
+        mode: "0600"
+      become: "{{ _rhokp_become }}"
+      no_log: true
+      changed_when: false
+
+    - name: Pull {{ rhokp_image }}
+      containers.podman.podman_image:
+        name: "{{ rhokp_image }}"
+        auth_file: "{{ _rhokp_authfile_path }}"
+        state: present
+        force: "{{ rhokp_image_force_pull | bool }}"
+      become: "{{ _rhokp_become }}"
+      environment: "{{ _rhokp_env }}"
+      register: _rhokp_pull
+      notify: Restart rhokp

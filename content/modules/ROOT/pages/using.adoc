@@ -1,0 +1,57 @@
+= Use the Portal
+:navtitle: 2. Use the Portal
+
+The portal behaves like the Red Hat Customer Portal, except every result is
+served from the container on your node. Nothing leaves the environment.
+
+== Search
+
+Use the search box on the landing page. Solr indexes the full text of the
+bundled documentation set, so searching works the same way it does online:
+
+* `podman quadlet` -- plain keyword search
+* `"subscription-manager register"` -- quote an exact phrase
+* `selinux AND container` -- combine terms
+
+Results are ranked across product documentation, solutions and knowledge base
+articles.
+
+== Browse by product
+
+The landing page also lists products. Pick one to walk its documentation set
+chapter by chapter, which is the faster route when you know where you are
+going.
+
+== Try it disconnected
+
+The point of RHOKP is that none of this needs the internet. To prove it, drop
+outbound traffic on the node and search again.
+
+[source,bash,subs="attributes"]
+----
+ssh {portal_node}
+sudo ip route show default            # note what you are about to remove
+----
+
+[WARNING]
+====
+Removing the default route will also cut your SSH session if you are connected
+over that route. Only do this from the bastion over the private network, and be
+ready to restore it:
+
+[source,bash]
+----
+sudo ip route add default via <gateway>
+----
+====
+
+A safer demonstration: check that the container has no outbound DNS or HTTP
+dependency while serving a page.
+
+[source,bash]
+----
+sudo podman exec rhokp sh -c 'command -v curl >/dev/null && curl -s -m 3 https://access.redhat.com >/dev/null; echo "exit=$?"'
+----
+
+The portal keeps serving either way, because the content is baked into the
+image.

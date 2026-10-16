@@ -1,0 +1,16 @@
+---
+# Direct-over-SSH deploy against hosts you list in inventory.yml.
+# For the RHDP Field Sourced Content path use deploy.yml instead.
+#
+#   ansible-playbook playbooks/standalone.yml \
+#     --vault-password-file playbooks/secrets/vault-password
+
+- name: Deploy the Red Hat Offline Knowledge Portal with podman
+  hosts: rhokp
+  gather_facts: true
+  vars:
+    # Nothing should run silently without credentials on this path -- you are
+    # at a terminal and can fix it.
+    rhokp_require_credentials: true
+  roles:
+    - rhokp

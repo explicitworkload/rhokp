@@ -1,0 +1,21 @@
+---
+galaxy_info:
+  role_name: rhokp_bastion_proxy
+  author: explicitworkload
+  description: >-
+    Drop an nginx location block into the RHDP bastion's /etc/nginx/proxy.d so
+    the catalog Routes reach the Red Hat Offline Knowledge Portal on a
+    workload node.
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: EL
+      versions:
+        - "9"
+        - "10"
+  galaxy_tags:
+    - nginx
+    - rhdp
+    - proxy
+
+dependencies: []

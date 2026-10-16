@@ -1,0 +1,14 @@
+---
+# Host (an entry in groups['nodes']) that the bastion should proxy to.
+rhokp_bastion_proxy_target: "{{ groups['nodes'][0] }}"
+
+# Port the portal listens on, on that node.
+rhokp_bastion_proxy_port: 8080
+
+# Where the platform's nginx looks for drop-in location blocks.
+rhokp_bastion_proxy_dir: /etc/nginx/proxy.d
+rhokp_bastion_proxy_file: rhokp.conf
+
+# Seconds nginx waits on the portal. A cold Solr start is slow, and the first
+# request after boot can sit for a while.
+rhokp_bastion_proxy_read_timeout: 300
