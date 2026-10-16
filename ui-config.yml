@@ -9,8 +9,12 @@ view_switcher:
   default_mode: split
 
 tabs:
+  # Tab URLs substitute ${GUID} and ${DOMAIN} at runtime. This is shell-style
+  # syntax, NOT the AsciiDoc {attribute} syntax used inside content pages --
+  # using the latter here leaves the braces literal and the tab fails with
+  # "server IP address could not be found".
   - name: Portal
-    url: https://app-secure-{guid}.{subdomain}
+    url: 'https://app-secure-${GUID}.${DOMAIN}'
 
   - name: Terminal
     path: /wetty

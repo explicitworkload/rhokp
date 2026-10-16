@@ -19,10 +19,10 @@ through your lab's public URL.
 |xref:access.adoc[Through the bastion URL]
 
 |The RHEL node running it
-|`{portal_node}`, reachable from the bastion with `ssh {portal_node}`
+|`{portal_node}` — from the bastion, `ssh {portal_node}`
 
 |The bastion
-|`{bastion_public_hostname}`, user `{ssh_user}`
+|The **Terminal** tab, already logged in as `{ssh_user}`
 |===
 
 == What you will do

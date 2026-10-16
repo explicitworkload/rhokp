@@ -3,9 +3,11 @@
 
 Run these on the node unless stated otherwise.
 
+Open the **Terminal** tab — it starts on the bastion as `{ssh_user}` — then
+hop to the node:
+
 [source,bash,subs="attributes"]
 ----
-ssh {ssh_user}@{bastion_public_hostname}
 ssh {portal_node}
 ----
 

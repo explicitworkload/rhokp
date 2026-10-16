@@ -1,52 +1,78 @@
 = Reach the Portal
 :navtitle: 1. Reach the Portal
 
-== Open it in a browser
+== Open it
 
-[cols="1,3",options="header"]
+Click the **Portal** tab on the right. It opens the portal at your
+environment's public HTTPS address, already filled in for you.
+
+If you would rather use a separate browser window, both of these reach the
+same portal — the exact hostnames are on your RHDP order page, under
+*Through the bastion*:
+
+[cols="1,2",options="header"]
 |===
-|Protocol |URL
+|Protocol |Address
 
 |HTTPS (recommended)
-|{portal_https_url}
+|`app-secure-<guid>.<subdomain>`
 
 |HTTP
-|{portal_http_url}
+|`app-<guid>.<subdomain>`
 |===
 
-Both URLs reach the same portal. The HTTPS one is terminated at the cluster
-edge and forwarded to the bastion as plain HTTP.
+TLS on the HTTPS address is terminated at the cluster edge and forwarded to
+the bastion as plain HTTP.
 
-The *Portal* tab on the left of this guide opens the same address.
+[NOTE]
+====
+A cold start takes about 45 seconds while Solr builds its index. If the tab is
+blank or times out straight after provisioning, wait a moment and hit the
+refresh icon on the tab.
+====
 
 == Confirm it from the terminal
 
-SSH to the bastion:
+Click the **Terminal** tab. You are already on the bastion as
+`{ssh_user}`.
+
+The bastion runs Nginx on ports 8080 and 8443 and forwards to the portal, so
+you can check the whole path without leaving it:
 
 [source,bash,subs="attributes"]
 ----
-ssh {ssh_user}@{bastion_public_hostname}
-----
-
-Check the public route answers:
-
-[source,bash,subs="attributes"]
-----
-curl -s -o /dev/null -w '%\{http_code}\n' {portal_https_url}
+curl -s -o /dev/null -w '%\{http_code}\n' http://localhost:8080/
 ----
 
 You want `200`.
 
 == Check the node directly
 
-The portal runs on a workload node, not on the bastion. From the bastion:
+The portal does not run on the bastion — it runs on a workload node, which
+has no public address of its own. From the bastion:
 
 [source,bash,subs="attributes"]
 ----
 ssh {portal_node}
-curl -s -o /dev/null -w '%\{http_code}\n' http://127.0.0.1:8080/
+curl -s -o /dev/null -w '%\{http_code}\n' http://127.0.0.1:{portal_port}/
 ----
 
-If the node answers `200` but the public URL does not, the problem is the
-bastion's reverse proxy rather than the portal. See
+That tells you which half of the path is at fault:
+
+[cols="1,1,2",options="header"]
+|===
+|Bastion `:8080` |Node `:8080` |Meaning
+
+|`200`
+|`200`
+|Everything is working.
+
+|not `200`
+|`200`
+|The portal is fine; the bastion's reverse proxy is not. See
 xref:operating.adoc#proxy[Operate and Troubleshoot].
+
+|not `200`
+|not `200`
+|The portal itself is down. See xref:operating.adoc[Operate and Troubleshoot].
+|===

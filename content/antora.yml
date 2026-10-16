@@ -10,17 +10,16 @@ asciidoc:
     experimental: true
     page-pagination: true
 
-    # Defaults so the guide renders during local development. At deploy time
-    # Showroom replaces these with the real values from user_data.
-    guid: abc123
-    subdomain: apps.cluster-abc123.ocpv00.rhdp.net
-    bastion_public_hostname: bastion.abc123.ocpv00.rhdp.net
+    # Only attributes this asset actually publishes belong here.
+    #
+    # Showroom overlays user_data onto these defaults, but the RHEL Field
+    # Asset does not publish bastion_public_hostname, guid, subdomain or the
+    # like -- verified by reading the rendered guide, which showed every
+    # default verbatim. Inventing defaults for them puts fake hostnames such
+    # as bastion.abc123.ocpv00.rhdp.net in front of the reader, so the pages
+    # are written to avoid needing them: the Portal and Terminal tabs already
+    # resolve to the right place, and the terminal starts on the bastion.
     ssh_user: lab-user
-    bastion_ssh_user_name: lab-user
-    bastion_ssh_password: password
-
-    # Portal specifics
-    portal_http_url: http://app-abc123.apps.cluster-abc123.ocpv00.rhdp.net
-    portal_https_url: https://app-secure-abc123.apps.cluster-abc123.ocpv00.rhdp.net
+    portal_node: node
     portal_service: rhokp.service
-    portal_node: node1
+    portal_port: 8080
