@@ -8,16 +8,34 @@ Three ways to deploy it, one role behind all of them:
 
 | Path | Entrypoint | Use when |
 | --- | --- | --- |
-| **Standalone RHEL** | `playbooks/standalone.yml` | You have a RHEL host and SSH access |
+| **Your own RHEL host** | `playbooks/standalone.yml` | You have a RHEL box, over SSH or locally |
 | **RHDP Field Asset** | `playbooks/deploy.yml` | Ordering from the Red Hat Demo Platform |
 | **Kubernetes / OpenShift** | `k8s/rhokp-deployment.yaml` | You have a cluster |
-
-The repository root **is** an Ansible collection (`explicitworkload.rhokp`),
-which is what the RHDP runner requires.
 
 **This repository is public and contains no credentials in any form — not even
 encrypted ones.** You supply the access key and the `registry.redhat.io` pull
 secret at setup time; see [How the credentials are protected](#how-the-credentials-are-protected).
+
+### Why the repository is shaped like this
+
+The layout follows the
+[rhpds/field-sourced-content-rhel](https://github.com/rhpds/field-sourced-content-rhel)
+template, so that it can be published on the Red Hat Demo Platform as a **RHEL
+Field Asset** catalog item. That template dictates the structure:
+
+| Requirement from the template | How this repo satisfies it |
+| --- | --- |
+| `galaxy.yml` at the repository root | The root **is** an Ansible collection, `explicitworkload.rhokp` |
+| Roles and playbooks inside the collection | `roles/`, `playbooks/` |
+| A playbook entrypoint the runner can find | `playbooks/deploy.yml` |
+| `requirements.yml` at the root or under `playbooks/` | At the root |
+| Target the platform's `bastions` and `nodes` inventory groups | `playbooks/deploy.yml` targets both |
+| Showroom lab guide at the root (or a named subdirectory) | `site.yml`, `ui-config.yml`, `content/` at the root |
+
+**None of that stops you using it on your own RHEL box.** The collection
+structure is just a directory layout — `playbooks/standalone.yml` runs against
+any RHEL host you can reach, with no RHDP involvement at all. Start at
+[Quick start — your own RHEL host](#quick-start--your-own-rhel-host).
 
 [catalog]: https://catalog.redhat.com/software/containers/offline-knowledge-portal/rhokp-rhel9
 [quadlet]: https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html
@@ -28,7 +46,7 @@ secret at setup time; see [How the credentials are protected](#how-the-credentia
 
 - [What you need](#what-you-need)
 - [Repository layout](#repository-layout)
-- [Quick start — standalone RHEL](#quick-start--standalone-rhel)
+- [Quick start — your own RHEL host](#quick-start--your-own-rhel-host)
 - [RHDP Field Sourced Content](#rhdp-field-sourced-content)
 - [Kubernetes / OpenShift](#kubernetes--openshift)
 - [How the credentials are protected](#how-the-credentials-are-protected)
@@ -99,43 +117,146 @@ package.json               local-only Antora preview tooling
 
 ---
 
-## Quick start — standalone RHEL
+## Quick start — your own RHEL host
 
-**1. Create your credential vault.** The script picks up `./pull-secret.json`
-and `./rhokp-access-key` if present, prompts for anything missing, and writes
-all three files into `playbooks/secrets/` (all gitignored).
+No RHDP, no cluster: one RHEL machine and the portal running on it.
+
+### 0. Prepare the RHEL host
+
+Podman 4.4 or newer, for Quadlet support. RHEL 9.2+ ships it:
+
+```bash
+sudo dnf -y install podman
+podman --version
+```
+
+For the default **rootless** install, the user you deploy as also needs a
+subuid range. Most RHEL users get one automatically; check and add if missing:
+
+```bash
+grep "^$USER:" /etc/subuid || \
+  sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$USER"
+```
+
+The role preflights both of these and fails with the exact fix if either is
+missing, so you can also just run it and see.
+
+### 1. Get the repo and the Ansible dependencies
+
+On whichever machine will *run* Ansible — your laptop, or the RHEL host itself:
+
+```bash
+git clone https://github.com/explicitworkload/rhokp
+cd rhokp
+ansible-galaxy collection install -r requirements.yml
+```
+
+### 2. Create your credential vault
+
+Put your pull secret and access key in the repo root as `pull-secret.json` and
+`rhokp-access-key` (both gitignored), or let the script prompt you:
 
 ```bash
 scripts/init-secrets.sh
 ```
 
-**2. Point the inventory at your host.** Edit [inventory.yml](inventory.yml):
+It encrypts both with Ansible Vault into `playbooks/secrets/`, alongside the
+password that opens them. All three stay local.
+
+### 3. Tell Ansible where the host is
+
+Pick whichever matches your setup. Edit [inventory.yml](inventory.yml):
+
+**Over SSH, from another machine:**
 
 ```yaml
-rhel-lab:
-  ansible_host: rhel.example.com
-  ansible_port: 22
-  ansible_user: lab-user
+all:
+  children:
+    rhokp:
+      hosts:
+        my-rhel:
+          ansible_host: rhel.example.com
+          ansible_port: 22
+          ansible_user: cloud-user
+          # ansible_ssh_private_key_file: ~/.ssh/id_rsa
 ```
 
-**3. Deploy.**
+**Running directly on the RHEL host itself:**
+
+```yaml
+all:
+  children:
+    rhokp:
+      hosts:
+        localhost:
+          ansible_connection: local
+```
+
+The group must stay named `rhokp` — that is what `playbooks/standalone.yml`
+targets.
+
+### 4. Deploy
 
 ```bash
-ansible-galaxy collection install -r requirements.yml
 ansible-playbook playbooks/standalone.yml \
   --vault-password-file playbooks/secrets/vault-password
 ```
 
-The run performs preflight checks (podman version, subuid range), resolves and
-decrypts the credentials, stores the access key as a podman secret, pulls the
-image, installs the Quadlet unit, opens the firewall, and waits for the portal
-to answer HTTP. It finishes by printing the URL.
+Add `--ask-become-pass` if your sudo needs a password, and `--ask-pass`
+instead of `--vault-password-file` plus a key if you authenticate over SSH
+with a password (needs `sshpass`).
+
+The run preflights podman and subuid, decrypts the credentials, stores the
+access key as a podman secret, pulls the image, installs the Quadlet unit,
+opens firewalld if it is running, and waits for the portal to answer HTTP. It
+finishes by printing the URL.
+
+### 5. Use it
 
 The portal listens on **8080/tcp**, and **8443/tcp** unless you set
-`rhokp_publish_https: false`. A cold start takes about 45 seconds.
+`rhokp_publish_https: false`. A cold start takes about 45 seconds while Solr
+builds its index.
 
-Prefer not to keep the vault password on disk? Drop `--vault-password-file` and
-pass `--ask-vault-pass` instead.
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' http://<your-host>:8080/
+```
+
+What was installed, for a rootless deploy:
+
+| | |
+| --- | --- |
+| Quadlet unit | `~/.config/containers/systemd/rhokp.container` |
+| systemd service | `rhokp.service` (user scope) |
+| Access key | podman secret `rhokp-access-key` |
+| Key fingerprint | `~/.config/rhokp/access-key.sha256` |
+| Helper | `/usr/local/bin/rhokp-set-credentials` |
+
+Rootful (`-e rhokp_rootless=false`) puts the first four under
+`/etc/containers/systemd/`, system scope, and `/etc/rhokp/`.
+
+Then see [Day-two operations](#day-two-operations) for logs, restarts, key
+rotation and teardown.
+
+### Common adjustments
+
+```bash
+# listen somewhere other than 8080/8443
+ansible-playbook playbooks/standalone.yml -e rhokp_http_port=80 -e rhokp_https_port=443 ...
+
+# root-owned system service instead of a user service
+ansible-playbook playbooks/standalone.yml -e rhokp_rootless=false ...
+
+# keep it host-local, behind your own reverse proxy
+ansible-playbook playbooks/standalone.yml -e rhokp_bind_address=127.0.0.1 ...
+
+# skip the vault entirely for a one-off
+ansible-playbook playbooks/standalone.yml \
+  -e rhokp_access_key='<key>' -e rhokp_pull_secret_path=./pull-secret.json
+```
+
+Rootless podman cannot bind ports below 1024 unless you lower
+`net.ipv4.ip_unprivileged_port_start`, so pair `rhokp_http_port=80` with
+`-e rhokp_rootless=false`.
 
 ---
 
