@@ -89,7 +89,7 @@ On the *bastion*:
 cat /etc/nginx/proxy.d/rhokp.conf
 sudo nginx -t
 sudo nginx -s reload
-curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8080/
+curl -s -o /dev/null -w '%\{http_code}\n' http://127.0.0.1:8080/
 ----
 
 If `/etc/nginx/proxy.d/` does not exist, the environment was ordered without

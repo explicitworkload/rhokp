@@ -32,7 +32,7 @@ Check the public route answers:
 
 [source,bash,subs="attributes"]
 ----
-curl -s -o /dev/null -w '%{http_code}\n' {portal_https_url}
+curl -s -o /dev/null -w '%\{http_code}\n' {portal_https_url}
 ----
 
 You want `200`.
@@ -44,7 +44,7 @@ The portal runs on a workload node, not on the bastion. From the bastion:
 [source,bash,subs="attributes"]
 ----
 ssh {portal_node}
-curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8080/
+curl -s -o /dev/null -w '%\{http_code}\n' http://127.0.0.1:8080/
 ----
 
 If the node answers `200` but the public URL does not, the problem is the
