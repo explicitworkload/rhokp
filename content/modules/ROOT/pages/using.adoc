@@ -1,5 +1,5 @@
 = Use the Portal
-:navtitle: 2. Use the Portal
+:navtitle: 3. Use the Portal
 
 The portal behaves like the Red Hat Customer Portal, except every result is
 served from the container on your node. Nothing leaves the environment.

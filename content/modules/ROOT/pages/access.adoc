@@ -1,5 +1,5 @@
 = Reach the Portal
-:navtitle: 1. Reach the Portal
+:navtitle: 2. Reach the Portal
 
 == Open it
 
@@ -51,8 +51,11 @@ the bastion as plain HTTP.
 
 [NOTE]
 ====
-A cold start takes about 45 seconds while Solr builds its index. A `502` or a
-timeout straight after provisioning usually just means it is still starting.
+A cold start takes about 45 seconds while Solr builds its index, so a `502`
+right after you start it usually just means it is still coming up.
+
+A `502` that never clears means the portal is not running at all — go back to
+xref:credentials.adoc[step 1] and supply your credentials.
 ====
 
 == Confirm it from the terminal

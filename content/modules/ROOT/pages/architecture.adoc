@@ -1,5 +1,5 @@
 = How It Was Deployed
-:navtitle: 4. How It Was Deployed
+:navtitle: 5. How It Was Deployed
 
 Everything in this environment was built by an Ansible collection, so you can
 reproduce it on a customer's disconnected site.

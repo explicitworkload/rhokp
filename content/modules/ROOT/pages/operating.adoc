@@ -1,5 +1,5 @@
 = Operate and Troubleshoot
-:navtitle: 3. Operate and Troubleshoot
+:navtitle: 4. Operate and Troubleshoot
 
 [IMPORTANT]
 ====
@@ -58,8 +58,8 @@ sudo rhokp-set-credentials
 ----
 
 It prompts for the pull secret and the access key, pulls the image if needed,
-stores the key as a Podman secret and restarts the portal. Use the same command
-if the portal was deployed without credentials and is sitting stopped.
+stores the key as a Podman secret and restarts the portal. It is the same
+command you ran in xref:credentials.adoc[step 1].
 
 == Things that look broken but are not
 

@@ -6,8 +6,15 @@ documentation, solutions and knowledge base on a machine with **no internet
 connection**. Everything ships inside one container image, indexed by Solr and
 served over HTTP.
 
-This environment has it already running on a RHEL workload node, reachable
-through your lab's public URL.
+Ansible has already installed it on a RHEL workload node here. It is **not
+running yet**: the portal needs a pull secret and an access key, and those are
+yours, not the lab's. Your first task is to supply them.
+
+[IMPORTANT]
+====
+Bring your own Red Hat account. You will need it for both credentials in
+xref:credentials.adoc[step 1].
+====
 
 == What you have
 
@@ -16,7 +23,8 @@ through your lab's public URL.
 |Thing |Where
 
 |The portal
-|xref:access.adoc[A new browser tab] — not the pane on the right
+|Installed on the node, waiting for your credentials.
+xref:credentials.adoc[Start it here]
 
 |The RHEL node running it
 |`{portal_node}` — from the bastion, `ssh {portal_node}`
@@ -27,7 +35,10 @@ through your lab's public URL.
 
 == What you will do
 
-. xref:access.adoc[Open the portal] and confirm it answers.
+. xref:credentials.adoc[Get your credentials] — a pull secret and an RHOKP
+  access key — and start the portal with them.
+. xref:access.adoc[Open the portal] in a new browser tab and confirm it
+  answers.
 . xref:using.adoc[Search the offline knowledge base] the way you would use
   the Red Hat Customer Portal.
 . xref:operating.adoc[Operate the service] -- logs, restarts, rotating the
@@ -37,7 +48,6 @@ through your lab's public URL.
 
 [NOTE]
 ====
-A cold start takes about 45 seconds while Solr builds its index. If the portal
-does not answer immediately after provisioning, give it a moment before
-assuming something is broken.
+A cold start takes about 45 seconds while Solr builds its index, so give it a
+moment after starting it before assuming something is broken.
 ====
