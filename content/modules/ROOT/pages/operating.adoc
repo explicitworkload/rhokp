@@ -1,15 +1,34 @@
 = Operate and Troubleshoot
 :navtitle: 3. Operate and Troubleshoot
 
-Run these on the node unless stated otherwise.
+[IMPORTANT]
+====
+**Every command on this page runs on the node, not the bastion.**
 
-Open the **Terminal** tab — it starts on the bastion as `{ssh_user}` — then
-hop to the node:
+The Terminal tab opens on the bastion, but the portal runs on
+`{portal_node}`. Hop across first:
 
 [source,bash,subs="attributes"]
 ----
 ssh {portal_node}
 ----
+
+Check your prompt before running anything else:
+
+[cols="1,1",options="header"]
+|===
+|Prompt |Meaning
+
+|`[{ssh_user}@bastion ~]$`
+|Still on the bastion — commands below will fail.
+
+|`[{ssh_user}@{portal_node} ~]$`
+|On the node — good.
+|===
+
+On the bastion you will see `Unit {portal_service} could not be found` and
+`rhokp-set-credentials: command not found`, because neither exists there.
+====
 
 == Service basics
 
@@ -30,9 +49,12 @@ sudo podman logs rhokp
 
 == Rotate the access key
 
-[source,bash]
+On the node (see the note at the top of this page):
+
+[source,bash,subs="attributes"]
 ----
-sudo /usr/sbin/rhokp-set-credentials
+ssh {portal_node}
+sudo rhokp-set-credentials
 ----
 
 It prompts for the pull secret and the access key, pulls the image if needed,
@@ -68,6 +90,13 @@ environment, never in the unit file.
 |The key is wrong. Check it at
 https://access.redhat.com/offline/access[access.redhat.com/offline/access^]
 and re-run `sudo /usr/sbin/rhokp-set-credentials`.
+
+|`Unit rhokp.service could not be found`
+|You are on the bastion. `ssh {portal_node}` first — the portal does not run
+on the bastion.
+
+|`sudo: rhokp-set-credentials: command not found`
+|Same cause: the helper is installed on the node, not the bastion.
 
 |Container restarts in a loop
 |`sudo podman logs rhokp` almost always names the cause on the first line.
