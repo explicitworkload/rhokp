@@ -1,7 +1,10 @@
 ---
 type: showroom
 
-default_width: 30
+# Percentage width of one pane; the other fills the rest. 50 gives an even
+# split either way. Readers can still drag the divider, and persist_url_state
+# remembers where they left it (it rides along in the URL as ?w=NN).
+default_width: 50
 persist_url_state: true
 
 view_switcher:
