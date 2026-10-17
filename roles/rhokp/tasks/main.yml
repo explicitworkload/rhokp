@@ -13,12 +13,17 @@
 
 - name: Install secret material
   ansible.builtin.import_tasks: secrets.yml
-  when: _rhokp_have_credentials | bool
+  when: _rhokp_have_access_key | bool
   tags: [rhokp, secrets]
 
+# Gated on the pull secret alone, not on both credentials. The image is 7.8 GB
+# and downloading it is the slowest part of the whole install by a wide margin,
+# so it is worth doing here whenever we can -- even when no access key turned up
+# and the portal will be left stopped. rhokp-set-credentials then finds the
+# image already present and finishes in seconds instead of minutes.
 - name: Pull the portal image
   ansible.builtin.import_tasks: image.yml
-  when: _rhokp_have_credentials | bool
+  when: _rhokp_have_pull_secret | bool
   tags: [rhokp, image]
 
 - name: Deploy the quadlet unit
@@ -44,8 +49,11 @@
 - name: Explain how to finish a credential-less install
   ansible.builtin.debug:
     msg:
-      - "RHOKP is installed but NOT running -- no credentials were available."
+      - "RHOKP is installed but NOT running -- no access key was available."
       - "On {{ inventory_hostname }}, run:  sudo {{ rhokp_helper_path }}"
-      - "It prompts for the pull secret and access key, then starts the portal."
+      - >-
+        {{ 'The image is already pulled, so it only asks for the access key.'
+           if _rhokp_have_pull_secret | bool
+           else 'It asks for a pull secret (7.8 GB download) and an access key.' }}
   when: not (_rhokp_have_credentials | bool)
   tags: [rhokp, verify]

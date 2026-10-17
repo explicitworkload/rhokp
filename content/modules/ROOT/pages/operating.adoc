@@ -57,9 +57,13 @@ ssh {portal_node}
 sudo rhokp-set-credentials
 ----
 
-It prompts for the pull secret and the access key, pulls the image if needed,
-stores the key as a Podman secret and restarts the portal. It is the same
-command you ran in xref:credentials.adoc[step 1].
+It prompts for whatever is still missing, stores the key as a Podman secret
+and restarts the portal. It is the same command you ran in
+xref:credentials.adoc[step 1].
+
+Rotating a key needs no pull secret: the image is already on the node, so the
+helper skips the download and asks for the key alone. Add `--force-pull` if
+you do want a fresh copy of the image.
 
 == Things that look broken but are not
 

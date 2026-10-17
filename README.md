@@ -327,8 +327,10 @@ command to finish it. On the node:
 sudo /usr/sbin/rhokp-set-credentials
 ```
 
-That helper is installed on every node. It prompts for the pull secret and
-access key, pulls the image, stores the podman secret, and starts the portal.
+That helper is installed on every node. It prompts for whatever is still
+missing, stores the access key as a podman secret, and starts the portal — see
+[Pre-pulling the image](#pre-pulling-the-image) for why "whatever is still
+missing" is usually just the access key.
 
 For a turnkey deploy instead, fork into a **private** repo and commit all three
 files:
@@ -345,6 +347,67 @@ itself, because the runner never passes `--vault-password-file`. Be clear about
 what that buys you: the secrets are not sitting in plain sight, but the
 password is in the same repo, so **the real protection is repo privacy plus the
 read token**. If that fork is ever made public, rotate both credentials.
+
+### Pre-pulling the image
+
+`registry.redhat.io/offline-knowledge-portal/rhokp-rhel9:latest` is **about
+7.8 GB compressed**, nearly all of it in a single layer. That download, not the
+install, is the slowest part of standing the portal up, and on a degraded
+install it lands on whoever runs `rhokp-set-credentials` — several minutes of
+staring at `Copying blob`.
+
+The role pulls the image during the deploy whenever it has a pull secret, and
+it does **not** need an access key to do so. The two credentials are resolved
+independently:
+
+| Resolved at deploy time | What happens |
+| --- | --- |
+| Pull secret **and** access key | Image pulled, secret stored, portal started. Nothing left to do. |
+| Pull secret only | Image pulled; portal left stopped. The helper asks only for the access key and starts in seconds. |
+| Access key only | Secret stored; nothing to pull from. The helper asks for a pull secret and downloads. |
+| Neither | Nothing pulled. The helper asks for both and downloads. |
+
+There is no way around needing *a* pull secret for this: the image is not
+mirrored anywhere unauthenticated. `registry.access.redhat.com` answers
+
+```
+This repo requires terms acceptance and is only available on registry.redhat.io
+```
+
+To pre-pull on an RHDP order, give the catalog item a pull secret as base64:
+
+```bash
+base64 -w0 pull-secret.json        # macOS: base64 -i pull-secret.json
+```
+
+and set it as `field_asset.pull_secret_b64`. `playbooks/deploy.yml` maps that
+onto `rhokp_pull_secret_b64`. On a bastion you are already logged into, the
+same thing without re-ordering:
+
+```bash
+sudo vi /opt/field-content/extra-vars.yml     # add rhokp_pull_secret_b64: "<blob>"
+sudo systemctl restart field-content
+```
+
+Weigh that up honestly. A pull secret on the catalog item is shared by everyone
+who orders the item, and it unlocks **the image only** — the content still
+needs a per-person access key, so the "bring your own credentials" shape of the
+lab survives. If you are not comfortable with a shared pull secret, leave it
+unset and accept the download.
+
+On the standalone path this is already automatic: `scripts/init-secrets.sh`
+vaults both credentials, so the image is pulled during the run. For a one-off
+without a vault:
+
+```bash
+ansible-playbook playbooks/standalone.yml \
+  -e rhokp_pull_secret_b64="$(base64 -w0 pull-secret.json)" \
+  -e rhokp_require_credentials=false
+```
+
+Once the image is on the node, `rhokp-set-credentials` detects it, skips the
+download, and does not ask for a pull secret at all. Force a fresh copy with
+`sudo /usr/sbin/rhokp-set-credentials --force-pull`.
 
 ### Watching and re-running
 

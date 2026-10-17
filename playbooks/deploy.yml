@@ -34,6 +34,19 @@
     # everything, leave the portal stopped, and let an operator finish with
     # `sudo /usr/sbin/rhokp-set-credentials`.
     rhokp_require_credentials: false
+
+    # Optional, and worth setting. The image is ~7.8 GB, and without a pull
+    # secret at provision time that download happens later, while someone sits
+    # watching `rhokp-set-credentials`. A pull secret configured on the catalog
+    # item moves it into the provision window instead; the helper then only
+    # asks for an access key. This unlocks the *image*, not the content -- the
+    # access key stays personal to whoever takes the lab.
+    #
+    # Set it as base64 (`base64 -w0 pull-secret.json`), because a pull secret is
+    # multi-line JSON and neither the order form nor extra-vars.yml handles that
+    # well. field_asset may be undefined entirely on a hand-run, hence the
+    # default({}).
+    rhokp_pull_secret_b64: "{{ (field_asset | default({})).pull_secret_b64 | default('') }}"
   roles:
     - rhokp
 

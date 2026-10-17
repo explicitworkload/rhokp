@@ -7,6 +7,14 @@ rhokp_registry_host: registry.redhat.io
 # Re-pull the image even if a copy is already present locally.
 rhokp_image_force_pull: false
 
+# The image is ~7.8 GB compressed and there is no unauthenticated mirror --
+# registry.access.redhat.com answers "This repo requires terms acceptance and is
+# only available on registry.redhat.io" -- so pre-pulling always needs a pull
+# secret. Supply one at deploy time and the download happens during the deploy
+# instead of while someone waits at a terminal. See "Pre-pulling the image" in
+# the README.
+rhokp_pull_secret_b64: ""
+
 # ---------------------------------------------------------------------------
 # Placement
 # ---------------------------------------------------------------------------

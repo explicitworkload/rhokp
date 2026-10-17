@@ -67,6 +67,14 @@
       changed_when: false
       failed_when: false
 
+    - name: Warn that a cold pull is slow
+      ansible.builtin.debug:
+        msg: >-
+          Pulling {{ rhokp_image }} -- about 7.8 GB compressed, almost all of it
+          in one layer, so this task sits with no output for several minutes on
+          a cold node. Doing it here is what keeps rhokp-set-credentials quick.
+      when: _rhokp_image_present.rc != 0 or rhokp_image_force_pull | bool
+
     - name: Pull {{ rhokp_image }}
       ansible.builtin.command:
         argv:
