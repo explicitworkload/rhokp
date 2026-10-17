@@ -7,8 +7,12 @@ connection**. Everything ships inside one container image, indexed by Solr and
 served over HTTP.
 
 Ansible has already installed it on a RHEL workload node here. It is **not
-running yet**: the portal needs a pull secret and an access key, and those are
-yours, not the lab's. Your first task is to supply them.
+running yet**: the portal needs a pull secret to fetch the image, and an
+access key to unlock the full content set. Both are yours, not the lab's, so
+your first task is to supply them.
+
+Without an access key the portal still runs, but serves only a limited view
+of the knowledge base — so it is worth generating one.
 
 [IMPORTANT]
 ====
