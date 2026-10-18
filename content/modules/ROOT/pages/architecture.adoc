@@ -61,7 +61,7 @@ flowchart TB
 
 == How RHOKP is deployed
 
-RHOKP is not left running as a loose container. Ansible installs it as a
+RHOKP is not left running as a loose container. RHOKP is installed as a
 **systemd service**, so the portal behaves like anything else on the box: it
 starts at boot, restarts on its own if it dies, and logs to the journal.
 
