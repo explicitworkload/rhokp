@@ -7,28 +7,70 @@ The portal opens in a **new browser tab** — it cannot be shown in the pane on
 the right, because the right-hand pane can only address services on this
 Showroom host.
 
-// Rendered by the browser from this page's own hostname. Showroom is served
-// at bastion-<guid>.<apps domain> and the portal at app-secure-<guid>.<apps
+// Rendered by the browser from this page's own hostname. Showroom is served at
+// bastion-<guid>.<apps domain> and the portal at app-secure-<guid>.<apps
 // domain>, so swapping the leading label gives the right address without
-// needing a value the platform never injects into the guide. If the script
-// does not run, nothing is inserted and the addresses below still apply.
+// needing a value the platform never injects into the guide.
+//
+// The same script rewrites the placeholders in the table below into live
+// links. That has to wait for DOMContentLoaded: this script runs inline while
+// the document is still parsing, so the table does not exist yet.
+//
+// Everything degrades: off a bastion-* host, or with no JS, the literal
+// app-secure-<guid>.<subdomain> placeholders stay exactly as written.
 ++++
 <p id="rhokp-portal-links"></p>
 <script>
 (function () {
-  try {
-    var host = window.location.hostname;
-    if (!/^bastion-/.test(host)) { return; }
-    var el = document.getElementById('rhokp-portal-links');
-    if (!el) { return; }
-    var https = 'https://' + host.replace(/^bastion-/, 'app-secure-');
-    var http  = 'http://'  + host.replace(/^bastion-/, 'app-');
-    el.innerHTML =
-      '<a href="' + https + '" target="_blank" rel="noopener noreferrer">' +
-      'Open the portal in a new tab</a> &nbsp;<span style="opacity:.7">(' +
-      '<a href="' + http + '" target="_blank" rel="noopener noreferrer">' +
-      'plain HTTP</a>)</span>';
-  } catch (e) { /* leave the static addresses below in place */ }
+  // Matches the placeholders written in the AsciiDoc table, capturing which
+  // of the two it is so one rule covers both rows.
+  var PLACEHOLDER = /^(app-secure|app)-<guid>\.<subdomain>$/;
+
+  function portalHost(bastionHost, prefix) {
+    return bastionHost.replace(/^bastion-/, prefix + '-');
+  }
+
+  function run() {
+    try {
+      var host = window.location.hostname;
+      if (!/^bastion-/.test(host)) { return; }
+
+      var https = 'https://' + portalHost(host, 'app-secure');
+      var http  = 'http://'  + portalHost(host, 'app');
+
+      var el = document.getElementById('rhokp-portal-links');
+      if (el) {
+        el.innerHTML =
+          '<a href="' + https + '" target="_blank" rel="noopener noreferrer">' +
+          'Open the portal in a new tab</a> &nbsp;<span style="opacity:.7">(' +
+          '<a href="' + http + '" target="_blank" rel="noopener noreferrer">' +
+          'plain HTTP</a>)</span>';
+      }
+
+      Array.prototype.forEach.call(
+        document.querySelectorAll('code'),
+        function (code) {
+          var m = PLACEHOLDER.exec((code.textContent || '').trim());
+          if (!m) { return; }
+          var prefix = m[1];
+          var a = document.createElement('a');
+          a.href = (prefix === 'app-secure' ? 'https://' : 'http://') +
+                   portalHost(host, prefix);
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.textContent = portalHost(host, prefix);
+          code.textContent = '';
+          code.appendChild(a);
+        }
+      );
+    } catch (e) { /* leave the written-out placeholders in place */ }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', run);
+  } else {
+    run();
+  }
 })();
 </script>
 ++++
