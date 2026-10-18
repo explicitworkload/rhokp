@@ -23,12 +23,15 @@ One credential is mandatory, the other is not.
 |Credential |Required?
 
 |Red Hat Customer Portal, Red Hat Developer, or registry service account
-|**Mandatory.** These pull the RHOKP container image from
-`registry.redhat.io`. Without one there is no image, and nothing to run.
+|**Mandatory.** Anyone with these can download and deploy the RHOKP container
+image from `registry.redhat.io`. Without one there is no image, and nothing
+to run.
 
 |RHOKP access key
-|**Optional.** It unlocks the full content set. Without one the portal still
-runs, but serves only a limited view of the knowledge base.
+|**Optional**, and separate. It unlocks the encrypted Knowledgebase content
+and the search index. Without one the portal runs with a banner saying your
+access is limited, and you can still browse product documentation, product
+lifecycle pages and the Security Data API.
 |===
 
 Internet access is required **to download the image**. It is *not* needed to

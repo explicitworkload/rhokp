@@ -5,7 +5,7 @@
 # you create out-of-band so they never land in git:
 #
 #   redhat-registry-secret  kubernetes.io/dockerconfigjson  -- pulls the image
-#   rhokp-access-key        Opaque, key ACCESS_KEY          -- unlocks the portal
+#   rhokp-access-key        Opaque, key ACCESS_KEY          -- unlocks Knowledgebase + search
 #
 # Create both in one step:
 #

@@ -62,7 +62,7 @@ any RHEL host you can reach, with no RHDP involvement at all. Start at
 
 | | |
 | --- | --- |
-| **RHOKP access key** | Issued with your portal entitlement. Injected as `ACCESS_KEY`. Check yours at <https://access.redhat.com/offline/access>. |
+| **RHOKP access key** | Optional. Unlocks the encrypted Knowledgebase content and the search index; without one you can still browse product documentation, product lifecycle pages and the Security Data API. Injected as `ACCESS_KEY`. Get one at <https://access.redhat.com/offline/access>. |
 | **Red Hat pull secret** | [console.redhat.com/openshift/install/pull-secret](https://console.redhat.com/openshift/install/pull-secret) — must contain an `auths` entry for `registry.redhat.io`. |
 | **Target host** | RHEL 9.2+ (or 10) with `podman` ≥ 4.4 for Quadlet, reachable over SSH, and a user with `sudo`. |
 | **Control node** | `ansible-core` ≥ 2.15, `python3`, `bash`. No Galaxy collections required. |
@@ -390,9 +390,10 @@ sudo systemctl restart field-content
 ```
 
 Weigh that up honestly. A pull secret on the catalog item is shared by everyone
-who orders the item, and it unlocks **the image only** — the content still
-needs a per-person access key, so the "bring your own credentials" shape of the
-lab survives. If you are not comfortable with a shared pull secret, leave it
+who orders the item, and all it does is **pull the image** — anyone with Red
+Hat registry credentials can do that. The Knowledgebase content and the search
+index still need a per-person access key, so the "bring your own credentials"
+shape of the lab survives. If you are not comfortable with a shared pull secret, leave it
 unset and accept the download.
 
 On the standalone path this is already automatic: `scripts/init-secrets.sh`

@@ -39,8 +39,9 @@
     # secret at provision time that download happens later, while someone sits
     # watching `rhokp-set-credentials`. A pull secret configured on the catalog
     # item moves it into the provision window instead; the helper then only
-    # asks for an access key. This unlocks the *image*, not the content -- the
-    # access key stays personal to whoever takes the lab.
+    # asks for an access key. A pull secret only gets you the *image*, which
+    # anyone with Red Hat registry credentials can do; the Knowledgebase
+    # content and search index still need a per-person access key.
     #
     # Set it as base64 (`base64 -w0 pull-secret.json`), because a pull secret is
     # multi-line JSON and neither the order form nor extra-vars.yml handles that

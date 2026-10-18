@@ -17,6 +17,17 @@ bundled documentation set, so searching works the same way it does online:
 Results are ranked across product documentation, solutions and knowledge base
 articles.
 
+[NOTE]
+====
+Search needs an access key. It is the search index, along with the encrypted
+Knowledgebase content, that the key unlocks.
+
+If there is a banner across the top of the portal saying your access is
+limited, you are running without one: browsing product documentation, product
+lifecycle pages and the Security Data API still works, but search does not.
+xref:credentials.adoc[Step 1] shows how to generate a key and apply it.
+====
+
 == Browse by product
 
 The landing page also lists products. Pick one to walk its documentation set
