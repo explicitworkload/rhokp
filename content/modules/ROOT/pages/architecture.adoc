@@ -11,21 +11,28 @@ reproduce it on a customer's disconnected site.
 // flex column, so div.mermaid shrink-wraps to the svg's default object size of
 // 300x150 and Mermaid scales the whole diagram down to fit that box. Giving the
 // container the column width and letting the svg fill it is the whole fix.
+// Giving .mermaid a definite width is the whole fix; Mermaid's own inline
+// max-width then caps the svg at its natural size and the margin centres it.
+// Measured in headless Chrome on this page, in a 756px window (the 50/50
+// split): before, 300px wide and 9px text; after, natural size and 16px text.
 ++++
 <style>
 .mermaid { width: 100%; }
 .mermaid svg {
-  width: 100%;
-  max-width: 100% !important;   /* beats Mermaid's inline max-width:<natural>px */
   height: auto;
   display: block;
+  margin: 0 auto;
 }
 </style>
 ++++
 
+// Top-to-bottom, not left-to-right. The Showroom pane is half a browser wide,
+// so an LR chain of five boxes has a natural width of ~1194px and has to be
+// scaled to 0.56 to fit -- 9px text, unreadable. TB is ~407px wide and fits at
+// full size. Switching orientation buys more legibility than any CSS can.
 [mermaid]
 ....
-flowchart LR
+flowchart TB
     U[Browser] -->|HTTPS| R1["OpenShift edge Route"]
     U -->|HTTP| R2["OpenShift edge Route"]
     R1 -->|plain HTTP :8443| N["Nginx on bastion"]

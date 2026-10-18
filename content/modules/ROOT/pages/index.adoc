@@ -1,11 +1,20 @@
 = Red Hat Offline Knowledge Portal
 :navtitle: Overview
 
-The Red Hat Offline Knowledge Portal (RHOKP) puts Red Hat's product
-documentation, solutions and knowledge base on a machine with **no internet
-connection**. It is a secure, offline containerized database, designed for
-disconnected and low-bandwidth environments: everything ships inside one
-container image and is served over HTTP.
+The Red Hat Offline Knowledge Portal (RHOKP) is a secure, offline version of
+Red Hat's proprietary knowledge content for our products. It is a pocket
+library of our award-winning Knowledgebase, product documentation, CVEs,
+Errata and more — light enough to run at the edge.
+
+It holds over **160,000 articles and solutions** from the Red Hat
+Knowledgebase, which you can reference offline to troubleshoot issues in your
+disconnected environment.
+
+RHOKP is useful anywhere Red Hat products are used and connectivity is
+limited, from intentionally disconnected secure sites to planned intervals of
+low or no bandwidth. A single small container image, it is easy to install and
+use, and compatible with Red Hat OpenShift, Podman, or any OCI-compliant
+container runtime.
 
 Search is powered by an **Apache Solr** backend engine, which also drives the
 portal's Retrieval-Augmented Generation (RAG) indexing.
