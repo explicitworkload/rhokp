@@ -18,9 +18,18 @@ AuthFile={{ _rhokp_authfile }}
 {% endif %}
 
 # ACCESS_KEY is injected from the podman secret store at start time, so the
-# value appears neither in this file nor in `podman inspect`.
+# value appears neither in this file nor in `podman inspect`. With no access
+# key there is no Secret= line below -- naming a podman secret that does not
+# exist makes the container fail to start outright, whereas simply omitting
+# ACCESS_KEY runs RHOKP in limited-access mode, which is what we want.
+#
+# rhokp-set-credentials adds and removes that one line in place. Keep the line
+# immediately above PublishPort, with no blank line between, so that what the
+# helper writes is byte-identical to what this template renders -- otherwise
+# the next Ansible run rewrites the unit and needlessly restarts the portal.
+{% if _rhokp_unit_wants_secret | default(true) | bool %}
 Secret={{ rhokp_access_key_secret_name }},type=env,target=ACCESS_KEY
-
+{% endif %}
 PublishPort={{ rhokp_bind_address }}:{{ rhokp_http_port }}:{{ rhokp_container_http_port }}
 {% if rhokp_publish_https | bool %}
 {% if rhokp_edge_tls | bool %}

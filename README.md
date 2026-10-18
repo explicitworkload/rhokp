@@ -705,6 +705,13 @@ Or on the node itself, without Ansible:
 sudo /usr/sbin/rhokp-set-credentials      # prompts, then restarts the portal
 ```
 
+Pressing Enter at the access-key prompt is a supported answer: the helper
+explains limited-access mode and asks for confirmation before deploying
+without one. `--no-access-key` does the same thing unattended. Either way it
+removes the podman secret and strips the `Secret=` line from the Quadlet
+unit, because a unit naming a secret that does not exist refuses to start.
+Running it again with a key puts both back.
+
 ### Keeping the content current
 
 Red Hat's online content changes constantly, so RHOKP is **usually updated

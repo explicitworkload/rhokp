@@ -1,4 +1,37 @@
 ---
+# The unit may only name the podman secret if that secret actually exists --
+# Quadlet refuses to start a container whose Secret= target is missing. The
+# node is the source of truth rather than this run's variables, because
+# rhokp-set-credentials may have added or removed the key since the last
+# deploy, and reading it back here is what keeps the two from fighting.
+- name: Check whether the access-key secret exists on the host
+  ansible.builtin.command:
+    argv:
+      - podman
+      - secret
+      - inspect
+      - "{{ rhokp_access_key_secret_name }}"
+  become: "{{ _rhokp_become }}"
+  environment: "{{ _rhokp_env }}"
+  register: _rhokp_secret_present
+  changed_when: false
+  failed_when: false
+  no_log: true
+
+- name: Decide whether the unit should reference the podman secret
+  ansible.builtin.set_fact:
+    _rhokp_unit_wants_secret: >-
+      {{ (_rhokp_have_access_key | default(false) | bool)
+         or (_rhokp_secret_present.rc == 0) }}
+
+- name: Note a deliberately key-less install
+  ansible.builtin.debug:
+    msg: >-
+      No access key on this host, so the unit is written without a Secret=
+      line. RHOKP will run in limited-access mode. Add a key at any time with
+      `sudo {{ rhokp_helper_path }}`.
+  when: not (_rhokp_unit_wants_secret | bool)
+
 - name: Check whether the portal is already installed
   ansible.builtin.stat:
     path: "{{ _rhokp_quadlet_dir }}/{{ rhokp_service_name }}.container"
