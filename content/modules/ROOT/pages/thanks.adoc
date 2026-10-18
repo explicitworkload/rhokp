@@ -3,23 +3,37 @@
 
 Thanks for taking the time to work through this lab.
 
-You have stood up the Red Hat Offline Knowledge Portal on a RHEL host with
-your own credentials, reached it through the bastion, searched the offline
-knowledge base, and seen how Ansible and Podman Quadlet put it together. That
-is the whole path you would follow on a customer's disconnected site — the
-only things that change are their pull secret, their access key and their
-network.
+Red Hat users who are not always connected to the internet might benefit from
+having the Red Hat library of product and technical information available
+offline — air-gapped sites, classified networks, manufacturing floors, ships,
+or simply planned intervals of low or no bandwidth.
 
-== Where to go from here
+== Deploy it yourself
 
-* Run it on your own RHEL host with the collection in the
-  https://github.com/explicitworkload/rhokp[project repository^]. The README
-  walks through a standalone deploy.
-* Take it to a customer who cannot reach `access.redhat.com` — air-gapped
-  sites, classified networks, manufacturing floors, ships.
-* Remember the credentials model: the pull secret fetches the image, the
-  access key unlocks the full content set, and the access key lives in a
-  Podman secret rather than in the unit file.
+The official installation documentation is here:
+
+https://docs.redhat.com/en/documentation/red_hat_offline_knowledge_portal/1/install-make_red_hat_expert_knowledge_available_in_offline_environments[Make Red Hat expert knowledge available in offline environments^]
+
+[IMPORTANT]
+====
+One credential is mandatory, the other is not.
+
+[cols="1,2",options="header"]
+|===
+|Credential |Required?
+
+|Red Hat Customer Portal, Red Hat Developer, or registry service account
+|**Mandatory.** These pull the RHOKP container image from
+`registry.redhat.io`. Without one there is no image, and nothing to run.
+
+|RHOKP access key
+|**Optional.** It unlocks the full content set. Without one the portal still
+runs, but serves only a limited view of the knowledge base.
+|===
+
+Internet access is required **to download the image**. It is *not* needed to
+use the portal once it is deployed — which is the entire point of it.
+====
 
 [NOTE]
 ====
