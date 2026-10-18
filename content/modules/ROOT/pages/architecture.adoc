@@ -1,10 +1,13 @@
 = How It Was Deployed
-:navtitle: 5. How It Was Deployed
+:navtitle: 5. How this Was Deployed
 
-Everything in this environment was built by an Ansible collection, so you can
-reproduce it on a customer's disconnected site.
+Everything in this environment was built automatically with Ansible, and the demo environment provided a simple RHEL with podman to facilitate the deployment of RHOKP.
 
 == The path a request takes
+
+Your browser never reaches the portal directly. The workload node running
+RHOKP has no public address of its own, so everything arrives through the
+bastion, and a request makes four hops to get there and back.
 
 // Mermaid draws an <svg> into div.mermaid, but the theme only ever sizes
 // .imageblock img -- a rule that cannot match an svg. .imageblock is a centred
@@ -33,33 +36,45 @@ reproduce it on a customer's disconnected site.
 [mermaid]
 ....
 flowchart TB
-    U[Browser] -->|HTTPS| R1["OpenShift edge Route"]
-    U -->|HTTP| R2["OpenShift edge Route"]
-    R1 -->|plain HTTP :8443| N["Nginx on bastion"]
+    U[Browser] -->|HTTPS| R1["OpenShift Edge Route"]
+    U -->|HTTP| R2["OpenShift Edge Route"]
+    R1 -->|plain HTTP :8443| N["Nginx on Bastion"]
     R2 -->|:8080| N
     N -->|proxy_pass :8080| P["RHOKP<br/>(container)"]
     P --> S[("Apache Solr backend engine")]
 ....
 
-TLS stops at the Route. The bastion sees plain HTTP on both ports, which is why
-the Nginx drop-in proxies HTTP rather than HTTPS.
+. **Browser to an OpenShift Edge Route.** Both addresses on your order page
+  are Edge Routes. The HTTPS one terminates TLS at the cluster edge — that is
+  what "edge" means here, and it is where encryption stops.
+. **Route to Nginx on the bastion.** The Route forwards **plain HTTP**
+  onwards: to port 8443 from the HTTPS Route, and to 8080 from the HTTP one.
+  Nothing is re-encrypted, which is why the Nginx drop-in proxies HTTP rather
+  than HTTPS. Point an HTTPS listener at 8443 and you get a `400`.
+. **Nginx to the RHOKP container.** A drop-in at
+  `/etc/nginx/proxy.d/rhokp.conf` proxies the request across to port 8080 on
+  the workload node. This is the only route in; the node is otherwise
+  unreachable.
+. **RHOKP to Apache Solr.** Solr runs inside the same container and answers
+  from the index baked into the image. No request leaves the environment at
+  any point.
 
-== What ran
+== How RHOKP is deployed
 
-The RHDP platform started `field-content.service` on the bastion, which
-installed the collection and ran `playbooks/deploy.yml`. Two plays:
+RHOKP is not left running as a loose container. Ansible installs it as a
+**systemd service**, so the portal behaves like anything else on the box: it
+starts at boot, restarts on its own if it dies, and logs to the journal.
 
-. **On the workload node** -- the `rhokp` role: preflight checks, decrypt the
-  credentials, store the access key as a Podman secret, pull the image, write a
-  Quadlet unit, open the firewall, wait for HTTP.
-. **On the bastion** -- the `rhokp_bastion_proxy` role: write
-  `/etc/nginx/proxy.d/rhokp.conf`, validate, reload.
+[source,bash,subs="attributes"]
+----
+sudo systemctl status {portal_service}
+sudo journalctl -u {portal_service}
+----
 
-== Why Quadlet
-
-The container is described by a `.container` file that systemd turns into a
-real service, so it gets restart policy, ordering and journal integration for
-free:
+What makes that possible is Podman **Quadlet**. Rather than a hand-written
+unit file, the container is described in a `.container` file that systemd
+reads at boot and turns into a real service, so it gets restart policy,
+ordering and journal integration for free:
 
 [source,ini]
 ----
@@ -79,16 +94,21 @@ secret store at start time, so it is in neither the unit file nor
 
 == Where the credentials came from
 
-They are committed to the project repository as Ansible Vault files. The RHDP
-runner cannot be handed a vault password on the command line, so the password
-ships in the same (private) repository and the role invokes `ansible-vault`
-itself.
+From you, and nowhere else. The project repository is public and holds no
+credentials in any form, not even encrypted ones. So the deploy ran without
+them: Ansible installed everything that did not need credentials, left the
+portal stopped, and waited for you to supply your own in
+xref:credentials.adoc[step 1].
+
+Your access key is then held in a **Podman secret** and injected as
+`ACCESS_KEY` only when the container starts, which is why it appears neither
+in the unit file nor in `podman inspect` output.
 
 [IMPORTANT]
 ====
-That means repository privacy is what actually protects these credentials. In
-production, back the Podman secret with an external driver such as `pass`, or
-pull the key from a KMS at start time.
+A Podman secret is not encrypted at rest — root on the node can read it. For
+production, back it with an external secret driver such as `pass`, or pull
+the key from a KMS at container start.
 ====
 
 == Reproducing it
@@ -97,8 +117,9 @@ pull the key from a KMS at start time.
 ----
 git clone https://github.com/explicitworkload/rhokp
 cd rhokp
-scripts/init-secrets.sh
-ansible-galaxy collection install -r requirements.yml
+scripts/init-secrets.sh          # vaults your pull secret and access key
 ansible-playbook playbooks/standalone.yml \
   --vault-password-file playbooks/secrets/vault-password
 ----
+
+No Galaxy collections to install: the roles use `ansible.builtin` only.
