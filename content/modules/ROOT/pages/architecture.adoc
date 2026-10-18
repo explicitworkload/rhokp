@@ -6,14 +6,32 @@ reproduce it on a customer's disconnected site.
 
 == The path a request takes
 
+// Mermaid draws an <svg> into div.mermaid, but the theme only ever sizes
+// .imageblock img -- a rule that cannot match an svg. .imageblock is a centred
+// flex column, so div.mermaid shrink-wraps to the svg's default object size of
+// 300x150 and Mermaid scales the whole diagram down to fit that box. Giving the
+// container the column width and letting the svg fill it is the whole fix.
+++++
+<style>
+.mermaid { width: 100%; }
+.mermaid svg {
+  width: 100%;
+  max-width: 100% !important;   /* beats Mermaid's inline max-width:<natural>px */
+  height: auto;
+  display: block;
+}
+</style>
+++++
+
 [mermaid]
 ....
 flowchart LR
-    U[Browser] -->|HTTPS| R[OpenShift edge Route]
-    R -->|plain HTTP :8443| N[Nginx on bastion]
-    U -->|HTTP| R2[Route] --> |:8080| N
-    N -->|proxy_pass :8080| P[RHOKP container on node]
-    P --> S[(Solr index baked into the image)]
+    U[Browser] -->|HTTPS| R1["OpenShift edge Route"]
+    U -->|HTTP| R2["OpenShift edge Route"]
+    R1 -->|plain HTTP :8443| N["Nginx on bastion"]
+    R2 -->|:8080| N
+    N -->|proxy_pass :8080| P["RHOKP<br/>(container)"]
+    P --> S[("Apache Solr backend engine")]
 ....
 
 TLS stops at the Route. The bastion sees plain HTTP on both ports, which is why

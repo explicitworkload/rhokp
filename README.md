@@ -765,14 +765,43 @@ curl -sI http://127.0.0.1:8080/ | grep -iE 'x-frame|content-security'   # on the
 
 ### Previewing the lab guide
 
-The Showroom guide is a standard Antora site. To render it locally:
+The guide is a standard Antora site, so you can render just the content:
 
 ```bash
 npm install     # one-off; installs Antora and the two theme extensions
 npm run preview # builds ./www and serves it on 8081
 ```
 
-Then open <http://localhost:8081>.
+Then open <http://localhost:8081>. That is enough to proofread prose, but it
+is **not** what the reader sees — it is missing the split pane, the tab bar
+and the sidebar, all of which come from Nookbag, the React app RHDP puts in
+front of the content.
+
+For the real thing:
+
+```bash
+scripts/showroom-preview.sh      # builds, assembles, serves on 8080
+```
+
+It pulls the Nookbag UI image, lifts the static app out of it, and drops
+`ui-config.yml` and `./www` alongside in the layout Nookbag expects. Useful
+because Showroom only builds at **provision time** — without this, a layout
+change cannot be checked without placing a new order.
+
+| | |
+| --- | --- |
+| `-p 9000` | serve on another port |
+| `-n` | skip the Antora rebuild |
+| `-t v0.5` | pin a different Nookbag release |
+| `?w=NN` | override the split live in the URL |
+
+Two things to know. The **Terminal tab is a placeholder** — there is no
+bastion and no wetty locally, and an unreachable iframe renders as a dead grey
+pane that looks like a bug. And the tag is **pinned to `v0.5` deliberately**:
+`quay.io/rhpds/nookbag:latest` is an older build that reads a different config
+schema (`nookbag.yml` with an `antora:` block) and ignores `default_width`,
+`view_switcher` and `persist_url_state`, so it would show you a layout RHDP
+does not serve.
 
 Antora reads **committed** files, so anything you have only saved — not
 committed — will not appear in the preview.
