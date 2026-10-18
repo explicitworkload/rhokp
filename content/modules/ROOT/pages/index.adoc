@@ -6,9 +6,18 @@ Red Hat's proprietary knowledge content for our products. It is a pocket
 library of our award-winning Knowledgebase, product documentation, CVEs,
 Errata and more — light enough to run at the edge.
 
-It holds over **160,000 articles and solutions** from the Red Hat
-Knowledgebase, which you can reference offline to troubleshoot issues in your
-disconnected environment.
+[cols="1,2",options="header"]
+|===
+|What is inside |What it is for
+
+|Over **160,000** Knowledgebase articles and solutions
+|Troubleshooting issues in your disconnected environment. This is the part an
+access key unlocks.
+
+|More than **10,000** product documents
+|Procedures and configuration guidance, to learn about and use Red Hat
+products. Browsable without an access key.
+|===
 
 RHOKP is useful anywhere Red Hat products are used and connectivity is
 limited, from intentionally disconnected secure sites to planned intervals of

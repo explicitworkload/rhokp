@@ -1,7 +1,12 @@
 = Thank You
 :navtitle: 6. Thank You
 
-Thanks for taking the time to work through this lab.
+Thanks for taking the time to work through this lab. If anything about this environment is unclear, or you hit something this guide
+did not cover, please get in touch:
+
+**John Goh** — mailto:jgoh@redhat.com[jgoh@redhat.com]
+
+Feedback on the lab itself is just as welcome as questions about the portal.
 
 Red Hat users who are not always connected to the internet might benefit from
 having the Red Hat library of product and technical information available
@@ -44,12 +49,3 @@ This environment is ephemeral. When your order expires, the node, the portal
 and the Podman secret holding your access key all go away with it. Nothing you
 pasted here outlives the lab.
 ====
-
-== Questions
-
-If anything about this environment is unclear, or you hit something this guide
-did not cover, please get in touch:
-
-**John Goh** — mailto:jgoh@redhat.com[jgoh@redhat.com]
-
-Feedback on the lab itself is just as welcome as questions about the portal.

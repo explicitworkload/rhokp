@@ -65,6 +65,29 @@ Rotating a key needs no pull secret: the image is already on the node, so the
 helper skips the download and asks for the key alone. Add `--force-pull` if
 you do want a fresh copy of the image.
 
+== Keep the content current
+
+Red Hat's online content changes constantly, so RHOKP is **usually updated
+weekly**. Releases depend on external factors, so a weekly release is not
+guaranteed, and when one does happen it lands between **Monday and Thursday**.
+
+A disconnected site therefore needs a refresh habit: whatever is in the image
+is as current as the day you pulled it, and no more.
+
+Restarting the service does **not** pick up a new image. The Quadlet unit sets
+`Pull=missing`, so Podman reuses the copy it already has. Force a fresh pull
+instead:
+
+[source,bash]
+----
+sudo rhokp-set-credentials --force-pull
+----
+
+That re-downloads the image, re-stores your access key and restarts the
+portal. It asks for your pull secret again, because this is the one case where
+the image really does have to come down from `registry.redhat.io` — budget a
+few minutes for 7.8 GB.
+
 == Things that look broken but are not
 
 [cols="2,3",options="header"]
