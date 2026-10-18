@@ -42,3 +42,28 @@
     _rhokp_conf_dir: /etc/rhokp
     _rhokp_authfile: /etc/containers/auth.json
     _rhokp_env: {}
+
+# Probed here, in the tags:[always] block, and deliberately before anything
+# else can change it. secrets.yml stops the portal to rotate a key, so a probe
+# taken later would read "inactive" and we would leave it down.
+#
+# This is the honest predicate for "should the portal be running when we
+# finish". _rhokp_have_credentials is not: a key-less unit is a legitimately
+# runnable unit, so a run that resolves no credentials must still put back a
+# portal that was up when it started.
+- name: Check whether the portal is running before we touch anything
+  ansible.builtin.command:
+    argv:
+      - systemctl
+      - "{{ '--user' if rhokp_rootless | bool else '--system' }}"
+      - is-active
+      - "{{ _rhokp_unit }}"
+  become: "{{ _rhokp_become }}"
+  environment: "{{ _rhokp_env }}"
+  register: _rhokp_active_probe
+  changed_when: false
+  failed_when: false
+
+- name: Record whether the portal was already running
+  ansible.builtin.set_fact:
+    _rhokp_was_active: "{{ _rhokp_active_probe.rc == 0 }}"

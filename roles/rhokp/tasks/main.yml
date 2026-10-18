@@ -13,7 +13,7 @@
 
 - name: Install secret material
   ansible.builtin.import_tasks: secrets.yml
-  when: _rhokp_have_access_key | bool
+  when: _rhokp_have_access_key | default(false) | bool
   tags: [rhokp, secrets]
 
 # Gated on the pull secret alone, not on both credentials. The image is 7.8 GB
@@ -23,7 +23,7 @@
 # image already present and finishes in seconds instead of minutes.
 - name: Pull the portal image
   ansible.builtin.import_tasks: image.yml
-  when: _rhokp_have_pull_secret | bool
+  when: _rhokp_have_pull_secret | default(false) | bool
   tags: [rhokp, image]
 
 - name: Deploy the quadlet unit
@@ -43,7 +43,8 @@
   ansible.builtin.import_tasks: verify.yml
   when:
     - rhokp_wait_for_ready | bool
-    - _rhokp_have_credentials | bool
+    - (_rhokp_have_credentials | default(false) | bool)
+      or (_rhokp_was_active | default(false) | bool)
   tags: [rhokp, verify]
 
 - name: Explain how to finish a credential-less install
@@ -53,7 +54,9 @@
       - "On {{ inventory_hostname }}, run:  sudo {{ rhokp_helper_path }}"
       - >-
         {{ 'The image is already pulled, so it only asks for the access key.'
-           if _rhokp_have_pull_secret | bool
+           if _rhokp_have_pull_secret | default(false) | bool
            else 'It asks for a pull secret (7.8 GB download) and an access key.' }}
-  when: not (_rhokp_have_credentials | bool)
+  when:
+    - not (_rhokp_have_credentials | default(false) | bool)
+    - not (_rhokp_was_active | default(false) | bool)
   tags: [rhokp, verify]

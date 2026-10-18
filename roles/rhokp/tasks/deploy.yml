@@ -15,8 +15,13 @@
   environment: "{{ _rhokp_env }}"
   register: _rhokp_secret_present
   changed_when: false
-  failed_when: false
-  no_log: true
+  # Only "no such secret" means absent. Any other failure -- the podman socket
+  # down, a corrupt secrets db, a permissions problem -- would otherwise be
+  # read as positive evidence of absence and silently strip Secret= from a
+  # working keyed install. Same test as secrets.yml uses for `secret rm`.
+  failed_when:
+    - _rhokp_secret_present.rc != 0
+    - "'no such secret' not in (_rhokp_secret_present.stderr | default('') | lower)"
 
 - name: Decide whether the unit should reference the podman secret
   ansible.builtin.set_fact:
@@ -28,8 +33,9 @@
   ansible.builtin.debug:
     msg: >-
       No access key on this host, so the unit is written without a Secret=
-      line. RHOKP will run in limited-access mode. Add a key at any time with
-      `sudo {{ rhokp_helper_path }}`.
+      line -- a unit naming a podman secret that does not exist refuses to
+      start. Whenever it is started it will serve limited-access mode. Add a
+      key, or start it as it is, with `sudo {{ rhokp_helper_path }}`.
   when: not (_rhokp_unit_wants_secret | bool)
 
 - name: Check whether the portal is already installed
@@ -70,6 +76,14 @@
 # not through `systemctl enable`, so only the start is driven from here.
 # Without credentials the image is absent and the unit would crash-loop, so the
 # unit is installed but left stopped for rhokp-set-credentials to start.
+# Starting needs both credentials, because a first install with no access key
+# is the lab's degraded mode and the guide tells the reader the portal is not
+# running yet. Choosing limited access stays a deliberate act at the terminal,
+# through rhokp-set-credentials.
+#
+# The _rhokp_was_active half is not about policy: secrets.yml stops the portal
+# to rotate a key, so without it a rotation on a host with no pull secret ends
+# the play with the portal down.
 - name: Start the portal
   ansible.builtin.systemd_service:
     name: "{{ _rhokp_unit }}"
@@ -77,4 +91,6 @@
     state: started
   become: "{{ _rhokp_become }}"
   environment: "{{ _rhokp_env }}"
-  when: _rhokp_have_credentials | bool
+  when:
+    - (_rhokp_have_credentials | default(false) | bool)
+      or (_rhokp_was_active | default(false) | bool)

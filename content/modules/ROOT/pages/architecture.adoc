@@ -80,7 +80,7 @@ ordering and journal integration for free:
 ----
 [Container]
 Image=registry.redhat.io/offline-knowledge-portal/rhokp-rhel9:latest
-Secret=rhokp-access-key,type=env,target=ACCESS_KEY
+Secret=rhokp-access-key,type=env,target=ACCESS_KEY   # only if you gave a key
 PublishPort=0.0.0.0:8080:8080
 
 [Service]
@@ -88,9 +88,21 @@ Restart=always
 SuccessExitStatus=137 143
 ----
 
-`Secret=` is the important line. The access key is injected from Podman's
+`Secret=` is the interesting line. The access key is injected from Podman's
 secret store at start time, so it is in neither the unit file nor
 `podman inspect` output.
+
+It is also the only line that comes and goes. Quadlet refuses to start a
+container whose `Secret=` names a store entry that does not exist, so a
+limited-access install has no such line at all — leaving `ACCESS_KEY` unset
+is what produces the banner, rather than an empty value. `rhokp-set-credentials`
+adds and removes that one line in place as you add or drop a key. Check which
+you have with:
+
+[source,bash]
+----
+sudo grep -c '^Secret=' /etc/containers/systemd/rhokp.container
+----
 
 == Where the credentials came from
 

@@ -15,6 +15,13 @@
   environment: "{{ _rhokp_env }}"
   # On a first install deploy.yml has already started a container built from the
   # current unit, image and secret, so there is nothing to restart.
+  #
+  # The second condition used to be _rhokp_have_credentials, which silently
+  # skipped the restart whenever a run resolved only one of the two. A portal
+  # running without an access key would then keep running without it after
+  # Ansible installed one, and the run still reported success. What matters is
+  # whether there is a container to put back, not which credentials turned up.
   when:
     - not (_rhokp_fresh_install | default(true) | bool)
-    - _rhokp_have_credentials | default(false) | bool
+    - (_rhokp_was_active | default(false) | bool)
+      or (_rhokp_have_credentials | default(false) | bool)
