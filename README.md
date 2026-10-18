@@ -1,10 +1,35 @@
 # Red Hat Offline Knowledge Portal — deployment
 
 Automation for running the [Red Hat Offline Knowledge Portal][catalog] (RHOKP) —
-Red Hat's product documentation, solutions and knowledge base, served from a
-single container with no internet connection.
+a secure, offline copy of Red Hat's proprietary knowledge content, served from
+a single container with no internet connection.
 
-Three ways to deploy it, one role behind all of them:
+| Inside the image | Needs an access key? |
+| --- | --- |
+| Over **160,000** Knowledgebase articles and solutions, searchable through Apache Solr | **Yes** |
+| More than **10,000** product documents, plus product lifecycle pages and the Security Data API | No |
+
+Anyone with Red Hat registry credentials — Customer Portal, Red Hat Developer,
+or a registry service account — can pull and deploy the image. The access key
+is a **separate** credential that unlocks the encrypted Knowledgebase content
+and the search index. Without one the portal still runs, showing a banner that
+your access is limited.
+
+Just looking? You do not need this repository at all:
+
+```bash
+podman login registry.redhat.io
+podman run --rm -p 8080:8080 -p 8443:8443 \
+  --env "ACCESS_KEY=<your_access_key>" \
+  -d registry.redhat.io/offline-knowledge-portal/rhokp-rhel9:latest
+```
+
+That is a throwaway container on your laptop. Everything below is about
+running it as a **managed service** — a systemd unit with a restart policy,
+the access key in a Podman secret rather than an environment variable on the
+command line, and a repeatable deploy.
+
+Three ways to do that, one role behind all of them:
 
 | Path | Entrypoint | Use when |
 | --- | --- | --- |
@@ -670,9 +695,6 @@ From the control node, with
 ansible-vault edit playbooks/secrets/access-key.vault $VP
 ansible-playbook playbooks/standalone.yml $VP
 
-# update to a newer :latest
-ansible-playbook playbooks/standalone.yml -e rhokp_image_force_pull=true $VP
-
 # tear down (add -e rhokp_remove_image=true to drop the image too)
 ansible-playbook playbooks/uninstall.yml $VP
 ```
@@ -681,6 +703,25 @@ Or on the node itself, without Ansible:
 
 ```bash
 sudo /usr/sbin/rhokp-set-credentials      # prompts, then restarts the portal
+```
+
+### Keeping the content current
+
+Red Hat's online content changes constantly, so RHOKP is **usually updated
+weekly**. Releases depend on external factors, so weekly is not guaranteed,
+and they land Monday to Thursday. Whatever is in your image is as current as
+the day you pulled it and no more, which makes a refresh schedule part of
+running this properly at a disconnected site.
+
+Restarting the service does **not** pick up a new image — the Quadlet unit
+sets `Pull=missing`, so Podman reuses the copy it already has. Force it:
+
+```bash
+ansible-playbook playbooks/standalone.yml -e rhokp_image_force_pull=true $VP
+
+# or on the node, without Ansible (prompts for the pull secret again,
+# because 7.8 GB genuinely has to come back down)
+sudo /usr/sbin/rhokp-set-credentials --force-pull
 ```
 
 Re-running `playbooks/standalone.yml` is idempotent. The role fingerprints the

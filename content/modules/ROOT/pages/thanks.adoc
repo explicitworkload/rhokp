@@ -43,6 +43,35 @@ Internet access is required **to download the image**. It is *not* needed to
 use the portal once it is deployed — which is the entire point of it.
 ====
 
+=== Run it on your own machine
+
+You do not need Ansible, or this lab, to try RHOKP. Log in to the registry
+with your Red Hat account and run it:
+
+[source,bash]
+----
+podman login registry.redhat.io
+
+podman run --rm -p 8080:8080 -p 8443:8443 \
+  --env "ACCESS_KEY=<your_personal_access_key>" \
+  -d registry.redhat.io/offline-knowledge-portal/rhokp-rhel9:latest
+----
+
+Then open http://localhost:8080[localhost:8080^]. Leave the `--env` line out
+to run without an access key — the portal still starts, with the limited
+access banner.
+
+[NOTE]
+====
+The image is about 7.8 GB, so the first `podman run` spends a few minutes
+pulling before it prints anything useful. A cold start then takes about 45
+seconds while Solr builds its index.
+
+`--rm` means the container is discarded when it stops. That is fine for a
+look around; for anything lasting, see the
+xref:architecture.adoc#_how_rhokp_is_deployed[systemd service] this lab built.
+====
+
 [NOTE]
 ====
 This environment is ephemeral. When your order expires, the node, the portal

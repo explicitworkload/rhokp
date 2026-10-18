@@ -28,10 +28,12 @@ container runtime.
 - Search is powered by an **Apache Solr** backend engine, which also drives the
 portal's Retrieval-Augmented Generation (RAG) indexing.
 
-Ansible has already installed it on a RHEL workload node here. It is **not
-running yet**: the portal needs a pull secret to fetch the image, and an
-access key to unlock the encrypted Knowledgebase content and the search
-index. Both are yours, not the lab's, so your first task is to supply them.
+== What will you need to do
+
+What we will do in this catalog item is provide the portal with a pull secret
+to fetch the image, and an access key to unlock the encrypted Knowledgebase
+content and the search index. Both are yours, not the lab's, so your first
+task is to supply them.
 
 The access key is optional. Without one the portal runs with a banner telling
 you your access is limited: you can still browse product documentation,
