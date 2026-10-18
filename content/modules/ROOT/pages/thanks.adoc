@@ -9,17 +9,4 @@ get in touch:
 
 Feedback on the lab itself is just as welcome as questions about the portal.
 
-Red Hat users who are not always connected to the internet might benefit from
-having the Red Hat library of product and technical information available
-offline — air-gapped sites, classified networks, manufacturing floors, ships,
-or simply planned intervals of low or no bandwidth.
 
-If you want to run it somewhere of your own, everything you need is in
-xref:deploy.adoc[Deploy It Yourself].
-
-[NOTE]
-====
-This environment is ephemeral. When your order expires, the node, the portal
-and the Podman secret holding your access key all go away with it. Nothing you
-pasted here outlives the lab.
-====
