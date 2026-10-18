@@ -1,0 +1,74 @@
+= Deploy It Yourself
+:navtitle: 6. Deploy It Yourself
+
+Nothing about RHOKP is specific to this lab. You can run it on your own
+hardware, on a customer's disconnected site, or on your laptop in a single
+command.
+
+The official installation documentation is here:
+
+https://docs.redhat.com/en/documentation/red_hat_offline_knowledge_portal/1/install-make_red_hat_expert_knowledge_available_in_offline_environments[Make Red Hat expert knowledge available in offline environments^]
+
+[IMPORTANT]
+====
+One credential is mandatory, the other is not.
+
+[cols="1,2",options="header"]
+|===
+|Credential |Required?
+
+|Red Hat Customer Portal, Red Hat Developer, or registry service account
+|**Mandatory.** Anyone with these can download and deploy the RHOKP container
+image from `registry.redhat.io`. Without one there is no image, and nothing
+to run.
+
+|RHOKP access key
+|**Optional**, and separate. It unlocks the encrypted Knowledgebase content
+and the search index. Without one the portal runs with a banner saying your
+access is limited, and you can still browse product documentation, product
+lifecycle pages and the Security Data API.
+|===
+
+Internet access is required **to download the image**. It is *not* needed to
+use the portal once it is deployed — which is the entire point of it.
+====
+
+== Run it on your own machine
+
+You do not need Ansible, or this lab, to try RHOKP. Log in to the registry
+with your Red Hat account and run it:
+
+[source,bash]
+----
+podman login registry.redhat.io
+
+podman run --rm -p 8080:8080 -p 8443:8443 \
+  --env "ACCESS_KEY=<your_personal_access_key>" \
+  -d registry.redhat.io/offline-knowledge-portal/rhokp-rhel9:latest
+----
+
+Then open http://localhost:8080[localhost:8080^]. Leave the `--env` line out
+to run without an access key — the portal still starts, with the limited
+access banner.
+
+[NOTE]
+====
+The image is about 7.8 GB, so the first `podman run` spends a few minutes
+pulling before it prints anything useful. A cold start then takes about 45
+seconds while Solr builds its index.
+
+`--rm` means the container is discarded when it stops. That is fine for a
+look around; for anything lasting, see the
+xref:architecture.adoc#_how_rhokp_is_deployed[systemd service] this lab built.
+====
+
+== Keep it current
+
+Red Hat's online content changes constantly, so RHOKP is **usually updated
+weekly**. Releases depend on external factors, so weekly is not guaranteed,
+and they land Monday to Thursday.
+
+Whatever is in your image is as current as the day you pulled it, and no
+more — so a disconnected site needs a refresh habit. See
+xref:operating.adoc#_keep_the_content_current[Keep the content current] for
+how to pull a newer image, and why a restart on its own will not do it.
