@@ -1,0 +1,38 @@
+= Thank You
+:navtitle: 6. Thank You
+
+Thanks for taking the time to work through this lab.
+
+You have stood up the Red Hat Offline Knowledge Portal on a RHEL host with
+your own credentials, reached it through the bastion, searched the offline
+knowledge base, and seen how Ansible and Podman Quadlet put it together. That
+is the whole path you would follow on a customer's disconnected site — the
+only things that change are their pull secret, their access key and their
+network.
+
+== Where to go from here
+
+* Run it on your own RHEL host with the collection in the
+  https://github.com/explicitworkload/rhokp[project repository^]. The README
+  walks through a standalone deploy.
+* Take it to a customer who cannot reach `access.redhat.com` — air-gapped
+  sites, classified networks, manufacturing floors, ships.
+* Remember the credentials model: the pull secret fetches the image, the
+  access key unlocks the full content set, and the access key lives in a
+  Podman secret rather than in the unit file.
+
+[NOTE]
+====
+This environment is ephemeral. When your order expires, the node, the portal
+and the Podman secret holding your access key all go away with it. Nothing you
+pasted here outlives the lab.
+====
+
+== Questions
+
+If anything about this environment is unclear, or you hit something this guide
+did not cover, please get in touch:
+
+**John Goh** — mailto:jgoh@redhat.com[jgoh@redhat.com]
+
+Feedback on the lab itself is just as welcome as questions about the portal.

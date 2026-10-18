@@ -4,3 +4,4 @@
 * xref:using.adoc[3. Use the Portal]
 * xref:operating.adoc[4. Operate and Troubleshoot]
 * xref:architecture.adoc[5. How It Was Deployed]
+* xref:thanks.adoc[6. Thank You]
