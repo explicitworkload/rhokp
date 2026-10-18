@@ -3,8 +3,12 @@
 
 The Red Hat Offline Knowledge Portal (RHOKP) puts Red Hat's product
 documentation, solutions and knowledge base on a machine with **no internet
-connection**. Everything ships inside one container image, indexed by Solr and
-served over HTTP.
+connection**. It is a secure, offline containerized database, designed for
+disconnected and low-bandwidth environments: everything ships inside one
+container image and is served over HTTP.
+
+Search is powered by an **Apache Solr** backend engine, which also drives the
+portal's Retrieval-Augmented Generation (RAG) indexing.
 
 Ansible has already installed it on a RHEL workload node here. It is **not
 running yet**: the portal needs a pull secret to fetch the image, and an
